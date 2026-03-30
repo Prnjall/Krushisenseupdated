@@ -3,7 +3,7 @@ from pathlib import Path
 
 # Dynamically resolve dataset path
 script_dir = Path(__file__).resolve().parent
-csv_path = script_dir / "data" / "Crop_recommendation.csv"
+csv_path = script_dir / "data" / "crop_merged.csv"
 
 print("Resolved dataset path:", csv_path)
 df = pd.read_csv(csv_path)
@@ -42,6 +42,17 @@ clf.fit(X_train, y_train)
 # Predict and print accuracy
 y_pred = clf.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
+print(f"Crop Recommendation Model Accuracy: {acc * 100:.2f}%")
+
+# Sample Prediction Test
+sample_input = [[90, 42, 43, 20, 80, 6.5, 200]]  # Rice-like features
+sample_pred = clf.predict(sample_input)[0]
+sample_prob = clf.predict_proba(sample_input)
+max_prob = max(sample_prob[0])
+print(f"Sample Prediction Test:")
+print(f"  Input: {sample_input}")
+print(f"  Predicted Crop: {sample_pred}")
+print(f"  Confidence (Probability): {max_prob * 100:.2f}%")
 
 # Save trained model
 import joblib

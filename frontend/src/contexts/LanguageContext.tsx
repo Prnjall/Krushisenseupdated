@@ -104,7 +104,11 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "High Viability": "उच्च व्यवहार्यता",
     "Strong Potential": "मजबूत क्षमता",
     "Suitable": "उपयुक्त",
-    "Recommended": "अनुशंसित"
+    "Recommended": "अनुशंसित",
+    "Similar Region": "समान क्षेत्र",
+    "Suitable Soil": "उपयुक्त मिट्टी",
+    "Recommended Fertilizer": "अनुशंसित उर्वरक",
+    "Based on similar agricultural conditions from real dataset": "वास्तविक डेटासेट से समान कृषि स्थितियों पर आधारित"
   },
   mr: {
     "Home": "होम",
@@ -194,7 +198,11 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "High Viability": "उच्च व्यवहार्यता",
     "Strong Potential": "मजबूत क्षमता",
     "Suitable": "योग्य",
-    "Recommended": "शिफारस केलेले"
+    "Recommended": "शिफारस केलेले",
+    "Similar Region": "समान क्षेत्र",
+    "Suitable Soil": "उपयुक्त माती",
+    "Recommended Fertilizer": "शिफारस केलेले खत",
+    "Based on similar agricultural conditions from real dataset": "वास्तविक डेटासेटमधील समान कृषी स्थितींवर आधारित"
   }
 };
 
@@ -244,23 +252,34 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setLoading(true);
     try {
-      const model = "gemini-3-flash-preview";
+      const result: Record<string, string> = {};
+      const tl = language === 'hi' ? 'hi' : 'mr';
       
-      const prompt = `Translate the following English agricultural application strings into ${
-        language === 'hi' ? 'Hindi' : 'Marathi'
-      }. 
-      Return ONLY a JSON object where the keys are the original English strings and the values are the translations.
-      
-      Strings to translate:
-      ${JSON.stringify(missingTexts)}`;
+      await Promise.all(
+        missingTexts.map(async (textToTranslate) => {
+          try {
+            const res = await fetch(
+              `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${tl}&dt=t&q=${encodeURIComponent(
+                textToTranslate
+              )}`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data[0]) {
+                const translated = data[0]
+                  .map((item: any) => item[0])
+                  .join("");
+                if (translated) {
+                  result[textToTranslate] = translated;
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Translation fetch error:", e);
+          }
+        })
+      );
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: [{ parts: [{ text: prompt }] }],
-        config: { responseMimeType: "application/json" }
-      });
-
-      const result = JSON.parse(response.text || '{}');
       Object.assign(dynamicTranslationCache[language], result);
       setDynamicTranslations(prev => ({ ...prev, ...result }));
     } catch (error) {

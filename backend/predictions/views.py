@@ -134,7 +134,7 @@ def predict_crop_view(request):
     # --- Hybrid Recommendation Logic ---
     import pandas as pd
     import numpy as np
-    dataset_path = Path(__file__).resolve().parent.parent / "ml" / "data" / "Crop_recommendation.csv"
+    dataset_path = Path(__file__).resolve().parent.parent / "ml" / "data" / "crop_merged.csv"
     df = pd.read_csv(dataset_path)
     feature_cols = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
     input_vec = np.array([nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall])

@@ -1,38 +1,61 @@
 import { useState } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar, Footer } from './components/Layout';
 import { Home } from './components/Home';
 import { PredictCrop } from './components/PredictCrop';
 import { HowItWorks } from './components/HowItWorks';
+import { CropDetailsPage } from './components/CropDetailsPage';
 import { AnimatePresence } from 'motion/react';
 import { LanguageProvider } from './contexts/LanguageContext';
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+// ── Pages that use the shared Navbar + Footer layout ────────────────────────
+function MainLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <Home onStart={() => setCurrentPage('predict')} />;
-      case 'predict':
-        return <PredictCrop />;
-      case 'how-it-works':
-        return <HowItWorks />;
-      default:
-        return <Home onStart={() => setCurrentPage('predict')} />;
-    }
+  // Derive currentPage from URL for Navbar active state
+  const pathToPage = (path: string) => {
+    if (path === '/' || path === '') return 'home';
+    if (path.startsWith('/predict')) return 'predict';
+    if (path.startsWith('/how-it-works')) return 'how-it-works';
+    return 'home';
+  };
+
+  const currentPage = pathToPage(location.pathname);
+
+  const setCurrentPage = (page: string) => {
+    if (page === 'home') navigate('/');
+    else if (page === 'predict') navigate('/predict');
+    else if (page === 'how-it-works') navigate('/how-it-works');
   };
 
   return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
+      <main className="flex-grow">
+        <AnimatePresence mode="wait">
+          <Routes location={location}>
+            <Route path="/" element={<Home onStart={() => setCurrentPage('predict')} />} />
+            <Route path="/predict" element={<PredictCrop />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+          </Routes>
+        </AnimatePresence>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+// ── Root App — crop detail gets its own full-page layout ────────────────────
+export default function App() {
+  return (
     <LanguageProvider>
-      <div className="min-h-screen flex flex-col">
-        <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
-        <main className="flex-grow">
-          <AnimatePresence mode="wait">
-            {renderPage()}
-          </AnimatePresence>
-        </main>
-        <Footer />
-      </div>
+      <Routes>
+        {/* Crop detail: no shared footer/navbar, uses its own top bar */}
+        <Route path="/crop/:cropName" element={<CropDetailsPage />} />
+        {/* All other pages: shared Navbar + Footer */}
+        <Route path="/*" element={<MainLayout />} />
+      </Routes>
     </LanguageProvider>
   );
 }
