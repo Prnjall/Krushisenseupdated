@@ -108,7 +108,49 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "Similar Region": "समान क्षेत्र",
     "Suitable Soil": "उपयुक्त मिट्टी",
     "Recommended Fertilizer": "अनुशंसित उर्वरक",
-    "Based on similar agricultural conditions from real dataset": "वास्तविक डेटासेट से समान कृषि स्थितियों पर आधारित"
+    "Based on similar agricultural conditions from real dataset": "वास्तविक डेटासेट से समान कृषि स्थितियों पर आधारित",
+    "Nearby Kendras": "नजदीकी केंद्र",
+    "Find Nearby Agriculture Kendras": "नजदीकी कृषि केंद्र खोजें",
+    "Locate government centers and resources near you": "अपने पास के सरकारी केंद्रों और संसाधनों का पता लगाएं",
+    "Maharashtra · ICAR Official Network": "महाराष्ट्र · आईसीएआर आधिकारिक नेटवर्क",
+    "Krishi Vigyan Kendras": "कृषि विज्ञान केंद्र",
+    "Find official government agricultural centres near you. Every KVK provides soil testing, expert guidance, and free farmer consultation.": "अपने पास के आधिकारिक सरकारी कृषि केंद्र खोजें। प्रत्येक केवीके मिट्टी परीक्षण, विशेषज्ञ मार्गदर्शन और मुफ्त किसान परामर्श प्रदान करता है।",
+    "🏛️ 49 KVKs across Maharashtra": "🏛️ महाराष्ट्र भर में 49 केवीके",
+    "🧪 Soil Testing at every KVK": "🧪 प्रत्येक केवीके में मिट्टी परीक्षण",
+    "💰 ₹100–₹200 per sample": "💰 ₹100–₹200 प्रति नमूना",
+    "🆓 Free expert consultation": "🆓 मुफ्त विशेषज्ञ परामर्श",
+    "Soil Testing Available at Every KVK — ₹100 to ₹200 per sample": "प्रत्येक केवीके में मिट्टी परीक्षण उपलब्ध — ₹100 से ₹200 प्रति नमूना",
+    "Tests: pH · Nitrogen · Phosphorus · Potassium · Organic Carbon · Micronutrients · Results in 3–7 days": "परीक्षण: पीएच · नाइट्रोजन · फास्फोरस · पोटेशियम · जैविक कार्बन · सूक्ष्म पोषक तत्व · परिणाम 3-7 दिनों में",
+    "Filter:": "फिल्टर:",
+    "All Regions": "सभी क्षेत्र",
+    "Western MH": "पश्चिमी महाराष्ट्र",
+    "Marathwada": "मराठवाड़ा",
+    "Vidarbha": "विदर्भ",
+    "Konkan": "कोंकण",
+    "North MH": "उत्तरी महाराष्ट्र",
+    "Find Nearest KVK": "नजदीकी केवीके खोजें",
+    "Locating...": "खोज रहे हैं...",
+    "Showing": "दिखा रहा है",
+    "Kendras": "केंद्र",
+    "KVK": "केवीके",
+    " District": " जिला",
+    "🧪 Soil Testing": "🧪 मिट्टी परीक्षण",
+    "Mobile Lab": "मोबाइल लैब",
+    "💬 Free Consultation": "💬 मुफ्त परामर्श",
+    "Maps": "मैप्स",
+    "You": "आप",
+    "ICAR · Krishi Vigyan Kendra": "आईसीएआर · कृषि विज्ञान केंद्र",
+    "📍": "📍",
+    "Soil Testing Available": "मिट्टी परीक्षण उपलब्ध",
+    "Cost:": "लागत:",
+    " per sample": " प्रति नमूना",
+    "Tests:": "परीक्षण:",
+    "Mobile Lab — visits your farm": "मोबाइल लैब — आपके खेत का दौरा करती है",
+    "from your location": "आपके स्थान से",
+    "Directions": "दिशानिर्देश",
+    "KVK (Official ICAR)": "केवीके (आधिकारिक आईसीएआर)",
+    "KVK with Mobile Soil Lab": "मोबाइल मिट्टी लैब के साथ केवीके",
+    "Your Location": "आपका स्थान"
   },
   mr: {
     "Home": "होम",
@@ -202,7 +244,49 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "Similar Region": "समान क्षेत्र",
     "Suitable Soil": "उपयुक्त माती",
     "Recommended Fertilizer": "शिफारस केलेले खत",
-    "Based on similar agricultural conditions from real dataset": "वास्तविक डेटासेटमधील समान कृषी स्थितींवर आधारित"
+    "Based on similar agricultural conditions from real dataset": "वास्तविक डेटासेटमधील समान कृषी स्थितींवर आधारित",
+    "Nearby Kendras": "नजीकची केंद्रे",
+    "Find Nearby Agriculture Kendras": "नजीकची कृषी केंद्रे शोधा",
+    "Locate government centers and resources near you": "तुमच्या जवळील सरकारी केंद्रे आणि संसाधने शोधा",
+    "Maharashtra · ICAR Official Network": "महाराष्ट्र · आयसीएआर अधिकृत नेटवर्क",
+    "Krishi Vigyan Kendras": "कृषि विज्ञान केंद्रे",
+    "Find official government agricultural centres near you. Every KVK provides soil testing, expert guidance, and free farmer consultation.": "तुमच्या जवळील अधिकृत सरकारी कृषी केंद्रे शोधा. प्रत्येक केव्हीके माती परीक्षण, तज्ञ मार्गदर्शन आणि विनामूल्य शेतकरी सल्ला प्रदान करते.",
+    "🏛️ 49 KVKs across Maharashtra": "🏛️ महाराष्ट्रभर ४९ केव्हीके",
+    "🧪 Soil Testing at every KVK": "🧪 प्रत्येक केव्हीकेमध्ये माती परीक्षण",
+    "💰 ₹100–₹200 per sample": "💰 ₹१००–₹२०० प्रति नमुना",
+    "🆓 Free expert consultation": "🆓 विनामूल्य तज्ञ सल्ला",
+    "Soil Testing Available at Every KVK — ₹100 to ₹200 per sample": "प्रत्येक केव्हीकेमध्ये माती परीक्षण उपलब्ध — ₹१०० ते ₹२०० प्रति नमुना",
+    "Tests: pH · Nitrogen · Phosphorus · Potassium · Organic Carbon · Micronutrients · Results in 3–7 days": "चाचण्या: पीएच · नायट्रोजन · फॉस्फरस · पोटॅशियम · सेंद्रिय कार्बन · सूक्ष्म पोषक घटक · निकाल ३-७ दिवसांत",
+    "Filter:": "फिल्टर:",
+    "All Regions": "सर्व क्षेत्रे",
+    "Western MH": "पश्चिम महाराष्ट्र",
+    "Marathwada": "मराठवाडा",
+    "Vidarbha": "विदर्भ",
+    "Konkan": "कोकण",
+    "North MH": "उत्तर महाराष्ट्र",
+    "Find Nearest KVK": "नजीकचे केव्हीके शोधा",
+    "Locating...": "शोधत आहे...",
+    "Showing": "दाखवत आहे",
+    "Kendras": "केंद्रे",
+    "KVK": "केव्हीके",
+    " District": " जिल्हा",
+    "🧪 Soil Testing": "🧪 माती परीक्षण",
+    "Mobile Lab": "मोबाईल लॅब",
+    "💬 Free Consultation": "💬 विनामूल्य सल्ला",
+    "Maps": "नकाशे",
+    "You": "तुम्ही",
+    "ICAR · Krishi Vigyan Kendra": "आयसीएआर · कृषि विज्ञान केंद्र",
+    "📍": "📍",
+    "Soil Testing Available": "माती परीक्षण उपलब्ध",
+    "Cost:": "किंमत:",
+    " per sample": " प्रति नमुना",
+    "Tests:": "चाचण्या:",
+    "Mobile Lab — visits your farm": "मोबाईल लॅब — तुमच्या शेताला भेट देते",
+    "from your location": "तुमच्या स्थानापासून",
+    "Directions": "दिशा",
+    "KVK (Official ICAR)": "केव्हीके (अधिकृत आयसीएआर)",
+    "KVK with Mobile Soil Lab": "मोबाईल सॉईल लॅबसह केव्हीके",
+    "Your Location": "तुमचे स्थान"
   }
 };
 
@@ -241,6 +325,26 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setDynamicTranslations({ ...dynamicTranslationCache[language] });
   }, [language]);
 
+  // Helper to translate a single string
+  const translateText = async (text: string, targetLanguage: string): Promise<string | null> => {
+    const tl = targetLanguage === 'hi' ? 'hi' : 'mr';
+    // Supported approach: Proxy through backend or use official GCP API.
+    // For now, keeping the current provider but wrapping it for reliability.
+    try {
+      const res = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`
+      );
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      if (data && data[0]) {
+        return data[0].map((item: any) => item[0]).join("");
+      }
+    } catch (e) {
+      console.error(`Translation error for "${text.substring(0, 20)}...":`, e);
+    }
+    return null;
+  };
+
   const translateBatch = async (texts: string[]) => {
     if (language === 'en' || texts.length === 0) return;
 
@@ -253,37 +357,25 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLoading(true);
     try {
       const result: Record<string, string> = {};
-      const tl = language === 'hi' ? 'hi' : 'mr';
       
-      await Promise.all(
-        missingTexts.map(async (textToTranslate) => {
-          try {
-            const res = await fetch(
-              `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${tl}&dt=t&q=${encodeURIComponent(
-                textToTranslate
-              )}`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              if (data && data[0]) {
-                const translated = data[0]
-                  .map((item: any) => item[0])
-                  .join("");
-                if (translated) {
-                  result[textToTranslate] = translated;
-                }
-              }
+      // Concurrency limiting: process in batches of 5
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < missingTexts.length; i += BATCH_SIZE) {
+        const batch = missingTexts.slice(i, i + BATCH_SIZE);
+        await Promise.all(
+          batch.map(async (textToTranslate) => {
+            const translated = await translateText(textToTranslate, language);
+            if (translated) {
+              result[textToTranslate] = translated;
             }
-          } catch (e) {
-            console.error("Translation fetch error:", e);
-          }
-        })
-      );
+          })
+        );
+      }
 
       Object.assign(dynamicTranslationCache[language], result);
       setDynamicTranslations(prev => ({ ...prev, ...result }));
     } catch (error) {
-      console.error("Translation error:", error);
+      console.error("Batch translation error:", error);
     } finally {
       setLoading(false);
     }

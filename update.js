@@ -79,7 +79,7 @@ for (const key of existingCrops) {
     soil: ${JSON.stringify(d.soil)},
     climate: ${JSON.stringify(d.climate)},
     water: ${JSON.stringify(d.water)},
-    waterDescription: "Water level is " + ${JSON.stringify(d.water)},
+      waterDescription: ${JSON.stringify("Water level is " + d.water)},
     why: ${JSON.stringify(d.why)},
     image: "/images/crops/${key}.jpg",
   },\n`;

@@ -50,11 +50,11 @@ export const HowItWorks: React.FC = () => {
               {t('KrushiSense bridges traditional wisdom and modern data science to deliver precision crop recommendations.')}
             </p>
           </div>
-          <div className="md:w-1/2 w-full h-80 rounded-xl overflow-hidden bg-surface-container-low relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+          <div className="md:w-1/2 w-full h-80 rounded-xl overflow-hidden bg-surface-container-low relative border border-on-surface/5">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent z-10"></div>
             <img 
               alt="Agricultural technology" 
-              className="w-full h-full object-cover grayscale opacity-60 mix-blend-multiply" 
+              className="w-full h-full object-cover grayscale opacity-40 mix-blend-luminosity" 
               src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=1920" 
               referrerPolicy="no-referrer"
             />

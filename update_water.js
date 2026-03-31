@@ -3,7 +3,7 @@ rice: { water: "High", water_mm: "1200 - 2500 mm per season", note: "Needs stand
 maize: { water: "Medium", water_mm: "500 - 800 mm per season", note: "Needs more water during flowering stage" },
 chickpea: { water: "Low", water_mm: "300 - 500 mm per season", note: "Grows well with low rainfall" },
 kidneybeans: { water: "Medium", water_mm: "400 - 700 mm per season", note: "Needs moderate irrigation" },
-pigeonpeas: { water: "Low", water_mm: "600 - 1000 mm per season", note: "Drought tolerant crop" },
+pigeonpeas: { water: "Medium", water_mm: "600 - 1000 mm per season", note: "Drought tolerant crop" },
 mothbeans: { water: "Low", water_mm: "200 - 400 mm per season", note: "Best for dry regions" },
 mungbean: { water: "Low", water_mm: "300 - 500 mm per season", note: "Short duration crop" },
 blackgram: { water: "Low", water_mm: "300 - 500 mm per season", note: "Needs less irrigation" },

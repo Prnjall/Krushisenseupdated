@@ -7,6 +7,7 @@ import { HowItWorks } from './components/HowItWorks';
 import { CropDetailsPage } from './components/CropDetailsPage';
 import { AnimatePresence } from 'motion/react';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { NearbyKendras } from './components/NearbyKendras';
 
 // ── Pages that use the shared Navbar + Footer layout ────────────────────────
 function MainLayout() {
@@ -18,6 +19,7 @@ function MainLayout() {
     if (path === '/' || path === '') return 'home';
     if (path.startsWith('/predict')) return 'predict';
     if (path.startsWith('/how-it-works')) return 'how-it-works';
+    if (path.startsWith('/nearby-kendras')) return 'nearby-kendras';
     return 'home';
   };
 
@@ -27,6 +29,7 @@ function MainLayout() {
     if (page === 'home') navigate('/');
     else if (page === 'predict') navigate('/predict');
     else if (page === 'how-it-works') navigate('/how-it-works');
+    else if (page === 'nearby-kendras') navigate('/nearby-kendras');
   };
 
   return (
@@ -38,6 +41,7 @@ function MainLayout() {
             <Route path="/" element={<Home onStart={() => setCurrentPage('predict')} />} />
             <Route path="/predict" element={<PredictCrop />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/nearby-kendras" element={<NearbyKendras />} />
           </Routes>
         </AnimatePresence>
       </main>
@@ -47,15 +51,19 @@ function MainLayout() {
 }
 
 // ── Root App — crop detail gets its own full-page layout ────────────────────
+import { ThemeProvider } from './contexts/ThemeContext';
+
 export default function App() {
   return (
     <LanguageProvider>
-      <Routes>
-        {/* Crop detail: no shared footer/navbar, uses its own top bar */}
-        <Route path="/crop/:cropName" element={<CropDetailsPage />} />
-        {/* All other pages: shared Navbar + Footer */}
-        <Route path="/*" element={<MainLayout />} />
-      </Routes>
+      <ThemeProvider>
+        <Routes>
+          {/* Crop detail: no shared footer/navbar, uses its own top bar */}
+          <Route path="/crop/:cropName" element={<CropDetailsPage />} />
+          {/* All other pages: shared Navbar + Footer */}
+          <Route path="/*" element={<MainLayout />} />
+        </Routes>
+      </ThemeProvider>
     </LanguageProvider>
   );
 }

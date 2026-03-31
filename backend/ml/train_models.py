@@ -67,24 +67,26 @@ joblib.dump(clf, crop_model_path)
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 
+skip_yield_training = False
 if "yield" in df.columns:
 	y_reg = df["yield"]
 	print("Yield column found in dataset.")
 else:
-	print("Yield column not found. Generating synthetic values.")
-	np.random.seed(42)
-	y_reg = np.random.uniform(10, 50, size=len(df))
+	print("WARNING: Yield column not found. Skipping yield regressor training.")
+	skip_yield_training = True
 
-X_reg = df[feature_cols]
+if not skip_yield_training:
+	X_reg = df[feature_cols]
 
-X_reg_train, X_reg_test, y_reg_train, y_reg_test = train_test_split(
-	X_reg, y_reg, test_size=0.2, random_state=42
-)
+	X_reg_train, X_reg_test, y_reg_train, y_reg_test = train_test_split(
+		X_reg, y_reg, test_size=0.2, random_state=42
+	)
 
-reg = RandomForestRegressor(n_estimators=200, random_state=42)
-reg.fit(X_reg_train, y_reg_train)
+	reg = RandomForestRegressor(n_estimators=200, random_state=42)
+	reg.fit(X_reg_train, y_reg_train)
 
-# Save yield prediction model
-yield_model_path = models_dir / "yield_prediction_model.pkl"
-joblib.dump(reg, yield_model_path)
-print("Yield prediction model saved successfully:", yield_model_path)
+	yield_model_path = models_dir / "yield_prediction_model.pkl"
+	joblib.dump(reg, yield_model_path)
+	print(f"Yield model saved to {yield_model_path}")
+else:
+	print("No yield model trained or persisted due to missing data.")

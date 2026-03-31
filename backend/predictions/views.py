@@ -1,23 +1,15 @@
-# Temporary test for model predictions
-if __name__ == "__main__":
-    import joblib
-    from pathlib import Path
-    model_path = Path(__file__).resolve().parent / "models" / "crop_recommendation_model.pkl"
-    model = joblib.load(model_path)
-    test_inputs = [
-        [90, 42, 43, 20, 80, 6.5, 200],
-        [20, 20, 20, 25, 60, 7, 50]
-    ]
-    for i, inp in enumerate(test_inputs):
-        pred = model.predict([inp])[0]
-        print(f"Test input {i+1}: {inp} => Predicted crop: {pred}")
 import json
+import logging
 from pathlib import Path
 import joblib
+import pandas as pd
+import numpy as np
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
+
+logger = logging.getLogger(__name__)
 
 
 # ==============================
@@ -53,8 +45,8 @@ print("Yield model loaded:", yield_prediction_model is not None)
 @csrf_exempt
 @require_POST
 def predict_crop_view(request):
-    print("Predict crop API called")
-    print("Raw request body:", request.body)
+    logger.debug("Predict crop API called")
+    logger.info(f"Predict crop request: {request.content_type}, length: {len(request.body)}")
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -132,11 +124,6 @@ def predict_crop_view(request):
         print(f"  {label}: {prob:.4f}")
 
     # --- Hybrid Recommendation Logic ---
-    import pandas as pd
-    import numpy as np
-    dataset_path = Path(__file__).resolve().parent.parent / "ml" / "data" / "crop_merged.csv"
-    df = pd.read_csv(dataset_path)
-    feature_cols = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
     input_vec = np.array([nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall])
 
     # 1. Model prediction for primary crop
@@ -198,3 +185,15 @@ def health_check_view(request):
         "success": True,
         "models_loaded": models_loaded
     })
+
+# Temporary test for model predictions
+if __name__ == "__main__":
+    model_path = Path(__file__).resolve().parent / "models" / "crop_recommendation_model.pkl"
+    model = joblib.load(model_path)
+    test_inputs = [
+        [90, 42, 43, 20, 80, 6.5, 200],
+        [20, 20, 20, 25, 60, 7, 50]
+    ]
+    for i, inp in enumerate(test_inputs):
+        pred = model.predict([inp])[0]
+        print(f"Test input {i+1}: {inp} => Predicted crop: {pred}")

@@ -679,7 +679,7 @@ export const cropData: Record<string, CropInfo> = {
     description: "Orange is a citrus fruit crop grown in subtropical climates with moderate rainfall.",
     note: "Pruning improves yield",
     why: "Performs well in moderate temperature and rainfall",
-    image: "/images/orange.jpg",
+    image: "/images/crops/orange.jpg",
   },
   papaya: {
     name: "Papaya",

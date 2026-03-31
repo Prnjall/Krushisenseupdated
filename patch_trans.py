@@ -1,14 +1,25 @@
 import re
+import sys
+import shutil
 import os
 
-path = r"p:\Agri Analysis\frontend\src\components\CropDetailsPage.tsx"
+if len(sys.argv) < 2:
+    print("Usage: python patch_trans.py <path_to_CropDetailsPage.tsx>")
+    sys.exit(1)
+
+path = sys.argv[1]
+if not os.path.exists(path):
+    print(f"Error: File not found at {path}")
+    sys.exit(1)
+
 with open(path, "r", encoding="utf-8") as f:
     text = f.read()
 
 # 1. Imports
-text = text.replace(
-    "import { getCropBySlug } from '../data/cropData';",
-    "import { getCropBySlug } from '../data/cropData';\nimport { useTranslation } from '../contexts/LanguageContext';\nimport { cropTranslations } from './PredictCrop';"
+text = re.sub(
+    r"import \{ getCropBySlug \} from '\.\./data/cropData';",
+    "import { getCropBySlug } from '../data/cropData';\nimport { useTranslation } from '../contexts/LanguageContext';\nimport { cropTranslations } from './PredictCrop';",
+    text
 )
 
 # 2. Add useTranslation and useEffect hooks
@@ -32,7 +43,9 @@ hook_addition = """  const { cropName } = useParams<{ cropName: string }>();
         crop.soil,
         crop.climate,
         crop.note,
-        crop.why
+        crop.why,
+        crop.water,
+        crop.water_mm
       ]);
     }
   }, [language, crop, translateBatch]);"""
@@ -56,9 +69,10 @@ title_original = """          <h1 className="font-headline font-bold text-lg tra
           </h1>"""
 title_new = """          <h1 className="font-headline font-bold text-lg tracking-tight text-black flex items-center gap-2">
             {cropTranslations[slug]?.en || crop.name}
-            {cropTranslations[slug]?.hi && (
+            {cropTranslations[slug] && (cropTranslations[slug].hi || cropTranslations[slug].mr) && (
               <span className="text-sm text-neutral-500 font-normal">
-                • {cropTranslations[slug].hi} • {cropTranslations[slug].mr}
+                {cropTranslations[slug].hi && `• ${cropTranslations[slug].hi}`}
+                {cropTranslations[slug].mr && ` • ${cropTranslations[slug].mr}`}
               </span>
             )}
           </h1>"""
@@ -90,7 +104,10 @@ for old, new in replacements:
     text = text.replace(old, new)
 
 
+# Backup original file
+shutil.copy2(path, path + ".bak")
+
 with open(path, "w", encoding="utf-8") as f:
     f.write(text)
 
-print("Patched CropDetailsPage.tsx with translations")
+print(f"Successfully patched {path}. Original saved as .bak")

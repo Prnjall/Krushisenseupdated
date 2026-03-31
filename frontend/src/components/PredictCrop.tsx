@@ -44,7 +44,7 @@ export const cropTranslations: Record<string, { en: string; hi: string; mr: stri
 };
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Loader2, ArrowRight, MapPin, Layers, Sprout } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 export interface SoilData {
   n: number;
@@ -302,13 +302,13 @@ export const PredictCrop: React.FC = () => {
 
       <section className="bg-surface-container-low p-8 md:p-12 rounded-xl mb-12">
         {errorMsg && (
-          <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-4 shadow-sm">
-            <div className="bg-red-100 p-1 rounded-full text-red-600 flex-shrink-0 mt-0.5">
+          <div className="mb-8 p-4 bg-red-500/10 border-l-4 border-red-500 rounded-r-lg flex items-start gap-4 shadow-sm backdrop-blur-sm">
+            <div className="bg-red-500/20 p-1 rounded-full text-red-500 flex-shrink-0 mt-0.5">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <p className="font-headline font-bold text-red-800 self-center">{errorMsg}</p>
+            <p className="font-headline font-bold text-red-600 dark:text-red-400 self-center">{errorMsg}</p>
           </div>
         )}
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -415,7 +415,7 @@ export const PredictCrop: React.FC = () => {
             <button 
               type="submit"
               disabled={loading}
-              className="bg-primary text-on-primary px-12 py-5 rounded-full font-headline font-extrabold text-lg tracking-tight uppercase transition-all active:scale-95 shadow-xl shadow-black/5 flex items-center gap-3 disabled:opacity-50"
+              className="bg-primary text-on-primary px-12 py-5 rounded-full font-headline font-extrabold text-lg tracking-tight uppercase transition-all active:scale-95 shadow-xl shadow-primary/20 flex items-center gap-3 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('Predict Crop')}
             </button>
@@ -530,7 +530,7 @@ const ResultCard: React.FC<{ result: PredictionResult; label: string; name: stri
           {result.district && (
             <div className="text-left animate-in fade-in slide-in-from-bottom-2 duration-700">
               <p className="font-bold text-xs flex items-center gap-2 text-on-surface/90">
-                <span className="text-base">📍</span> {t('Similar Region')}: <span className="text-primary">{result.district}</span>
+                <MapPin className="size-3.5 text-primary shrink-0" /> {t('Similar Region')}: <span className="text-primary">{result.district}</span>
               </p>
               <p className="text-[10px] leading-relaxed text-on-surface-variant/70 mt-0.5 ml-6 italic">
                 ({t(regionExplanation)})
@@ -541,7 +541,7 @@ const ResultCard: React.FC<{ result: PredictionResult; label: string; name: stri
           {result.soil_color && (
             <div className="text-left animate-in fade-in slide-in-from-bottom-3 duration-700 delay-100">
               <p className="font-bold text-xs flex items-center gap-2 text-on-surface/90">
-                <span className="text-base">🪨</span> {t('Suitable Soil')}: <span className="text-primary">{result.soil_color}</span>
+                <Layers className="size-3.5 text-primary shrink-0" /> {t('Suitable Soil')}: <span className="text-primary">{result.soil_color}</span>
               </p>
               <p className="text-[10px] leading-relaxed text-on-surface-variant/70 mt-0.5 ml-6 italic">
                 ({t(soilExplanation)})
@@ -552,7 +552,7 @@ const ResultCard: React.FC<{ result: PredictionResult; label: string; name: stri
           {result.fertilizer && (
             <div className="text-left animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
               <p className="font-bold text-xs flex items-center gap-2 text-on-surface/90">
-                <span className="text-base">🌿</span> {t('Recommended Fertilizer')}: <span className="text-primary">{result.fertilizer}</span>
+                <Sprout className="size-3.5 text-primary shrink-0" /> {t('Recommended Fertilizer')}: <span className="text-primary">{result.fertilizer}</span>
               </p>
               <p className="text-[10px] leading-relaxed text-on-surface-variant/70 mt-0.5 ml-6 italic">
                 ({t(fertExplanation)})
@@ -583,8 +583,8 @@ style.innerHTML = `
 .crop-card {
   padding: 12px;
   border-radius: 10px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(5px);
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-on-surface-variant-opacity);
   text-align: center;
   margin-bottom: 10px;
 }
@@ -593,7 +593,7 @@ style.innerHTML = `
   font-weight: bold;
 }
 .crop-card p {
-  font-size: 14px;
+  font-size: 11px;
   opacity: 0.8;
 }
 `;

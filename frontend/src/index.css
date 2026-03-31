@@ -24,9 +24,49 @@
 }
 
 @layer base {
+  :root {
+    --color-background: #f9f9f9;
+    --color-surface: #f9f9f9;
+    --color-surface-container-low: #f3f3f3;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-high: #e8e8e8;
+    --color-surface-container-highest: #e2e2e2;
+    --color-surface-dim: #dadada;
+    
+    --color-primary: #000000;
+    --color-primary-container: #3b3b3b;
+    --color-on-primary: #e2e2e2;
+    
+    --color-on-surface: #1b1b1b;
+    --color-on-surface-variant: #474747;
+    --color-outline: #777777;
+    --color-outline-variant: #c6c6c6;
+    --grid-color: #e2e2e2;
+  }
+
+  .dark {
+    --color-background: #0a0a0a;
+    --color-surface: #0a0a0a;
+    --color-surface-container-low: #121212;
+    --color-surface-container-lowest: #1a1a1a;
+    --color-surface-container-high: #242424;
+    --color-surface-container-highest: #2c2c2c;
+    --color-surface-dim: #3a3a3a;
+    
+    --color-primary: #ffffff;
+    --color-primary-container: #e2e2e2;
+    --color-on-primary: #000000;
+    
+    --color-on-surface: #f3f3f3;
+    --color-on-surface-variant: #a0a0a0;
+    --color-outline: #888888;
+    --color-outline-variant: #333333;
+    --grid-color: #1a1a1a;
+  }
+
   body {
-    @apply bg-background text-on-surface font-body;
-    background-image: radial-gradient(#e2e2e2 0.5px, transparent 0.5px);
+    @apply bg-background text-on-surface font-body transition-colors duration-300;
+    background-image: radial-gradient(var(--grid-color) 0.5px, transparent 0.5px);
     background-size: 24px 24px;
   }
 }
