@@ -133,7 +133,9 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "Showing": "दिखा रहा है",
     "Kendras": "केंद्र",
     "KVK": "केवीके",
+    "District": "जिला",
     " District": " जिला",
+    "found": "मिले",
     "🧪 Soil Testing": "🧪 मिट्टी परीक्षण",
     "Mobile Lab": "मोबाइल लैब",
     "💬 Free Consultation": "💬 मुफ्त परामर्श",
@@ -149,8 +151,73 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "from your location": "आपके स्थान से",
     "Directions": "दिशानिर्देश",
     "KVK (Official ICAR)": "केवीके (आधिकारिक आईसीएआर)",
-    "KVK with Mobile Soil Lab": "मोबाइल मिट्टी लैब के साथ केवीके",
-    "Your Location": "आपका स्थान"
+    "KVK with Mobile Soil Lab": "केवीके (मोबाइल सुलभ प्रयोगशाला के साथ)",
+    "Your Location": "आपका स्थान",
+    "Pune": "पुणे",
+    "Kolhapur": "कोल्हापुर",
+    "Satara": "सतारा",
+    "Sangli": "सांगली",
+    "Solapur": "सोलापुर",
+    "Nashik": "नाशिक",
+    "Ahmednagar": "अहमदनगर",
+    "Dhule": "धुले",
+    "Jalgaon": "जलगाँव",
+    "Nandurbar": "नंदुरबार",
+    "Aurangabad": "औरंगाबाद",
+    "Latur": "लातूर",
+    "Nanded": "नांदेड़",
+    "Osmanabad": "उस्मानाबाद",
+    "Hingoli": "हिंगोली",
+    "Beed": "बीड़",
+    "Nagpur": "नागपुर",
+    "Amravati": "अमरावती",
+    "Washim": "वाशिम",
+    "Yavatmal": "यवतमाल",
+    "Akola": "अकोला",
+    "Buldhana": "बुलढाणा",
+    "Wardha": "वर्धा",
+    "Chandrapur": "चंद्रपुर",
+    "Gadchiroli": "गढ़चिरौली",
+    "Gondia": "गोंदिया",
+    "Bhandara": "भंडारा",
+    "Raigad": "रायगढ़",
+    "Ratnagiri": "रत्नागिरी",
+    "Sindhudurg": "सिंधुदुर्ग",
+    "Thane": "ठाणे",
+    "Palghar": "पालघर",
+    "KVK Baramati": "केवीके बारामती",
+    "KVK Narayangaon": "केवीके नारायणगांव",
+    "KVK Kolhapur": "केवीके कोल्हापुर",
+    "KVK Satara": "केवीके सतारा",
+    "KVK Sangli": "केवीके सांगली",
+    "KVK Solapur": "केवीके सोलापुर",
+    "KVK Nashik": "केवीके नाशिक",
+    "KVK Ahmednagar": "केवीके अहमदनगर",
+    "KVK Dhule": "केवीके धुले",
+    "KVK Jalgaon": "केवीके जलगाँव",
+    "KVK Nandurbar": "केवीके नंदुरबार",
+    "KVK Aurangabad": "केवीके औरंगाबाद",
+    "KVK Latur": "केवीके लातूर",
+    "KVK Nanded": "केवीके नांदेड़",
+    "KVK Osmanabad": "केवीके उस्मानाबाद",
+    "KVK Hingoli": "केवीके हिंगोली",
+    "KVK Beed": "केवीके बीड़",
+    "KVK Nagpur": "केवीके नागपुर",
+    "KVK Amravati": "केवीके अमरावती",
+    "KVK Washim": "केवीके वाशिम",
+    "KVK Yavatmal": "केवीके यवतमाल",
+    "KVK Akola": "केवीके अकोला",
+    "KVK Buldhana": "केवीके बुलढाणा",
+    "KVK Wardha": "केवीके वर्धा",
+    "KVK Chandrapur": "केवीके चंद्रपुर",
+    "KVK Gadchiroli": "केवीके गढ़चिरौली",
+    "KVK Gondia": "केवीके गोंदिया",
+    "KVK Bhandara": "केवीके भंडारा",
+    "KVK Raigad": "केवीके रायगढ़",
+    "KVK Ratnagiri": "केवीके रत्नागिरी",
+    "KVK Sindhudurg": "केवीके सिंधुदुर्ग",
+    "KVK Thane": "केवीके ठाणे",
+    "KVK Palghar": "केवीके पालघर"
   },
   mr: {
     "Home": "होम",
@@ -269,7 +336,9 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "Showing": "दाखवत आहे",
     "Kendras": "केंद्रे",
     "KVK": "केव्हीके",
+    "District": "जिल्हा",
     " District": " जिल्हा",
+    "found": "मिळाले",
     "🧪 Soil Testing": "🧪 माती परीक्षण",
     "Mobile Lab": "मोबाईल लॅब",
     "💬 Free Consultation": "💬 विनामूल्य सल्ला",
@@ -285,8 +354,73 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "from your location": "तुमच्या स्थानापासून",
     "Directions": "दिशा",
     "KVK (Official ICAR)": "केव्हीके (अधिकृत आयसीएआर)",
-    "KVK with Mobile Soil Lab": "मोबाईल सॉईल लॅबसह केव्हीके",
-    "Your Location": "तुमचे स्थान"
+    "KVK with Mobile Soil Lab": "केव्हीके (मोबाईल सुलभ प्रयोगशाळेसह)",
+    "Your Location": "तुमचे स्थान",
+    "Pune": "पुणे",
+    "Kolhapur": "कोल्हापूर",
+    "Satara": "सातारा",
+    "Sangli": "सांगली",
+    "Solapur": "सोलापूर",
+    "Nashik": "नाशिक",
+    "Ahmednagar": "अहमदनगर",
+    "Dhule": "धुळे",
+    "Jalgaon": "जळगाव",
+    "Nandurbar": "नंदुरबार",
+    "Aurangabad": "औरंगाबाद",
+    "Latur": "लातूर",
+    "Nanded": "नांदेड",
+    "Osmanabad": "उस्मानाबाद",
+    "Hingoli": "हिंगोली",
+    "Beed": "बीड",
+    "Nagpur": "नागपूर",
+    "Amravati": "अमरावती",
+    "Washim": "वाशिम",
+    "Yavatmal": "यवतमाळ",
+    "Akola": "अकोला",
+    "Buldhana": "बुलढाणा",
+    "Wardha": "वर्धा",
+    "Chandrapur": "चंद्रपूर",
+    "Gadchiroli": "गडचिरोली",
+    "Gondia": "गोंदिया",
+    "Bhandara": "भंडारा",
+    "Raigad": "रायगड",
+    "Ratnagiri": "रत्नागिरी",
+    "Sindhudurg": "सिंधुदुर्ग",
+    "Thane": "ठाणे",
+    "Palghar": "पालघर",
+    "KVK Baramati": "केव्हीके बारामती",
+    "KVK Narayangaon": "केव्हीके नारायणगाव",
+    "KVK Kolhapur": "केव्हीके कोल्हापूर",
+    "KVK Satara": "केव्हीके सातारा",
+    "KVK Sangli": "केव्हीके सांगली",
+    "KVK Solapur": "केव्हीके सोलापूर",
+    "KVK Nashik": "केव्हीके नाशिक",
+    "KVK Ahmednagar": "केव्हीके अहमदनगर",
+    "KVK Dhule": "केव्हीके धुळे",
+    "KVK Jalgaon": "केव्हीके जळगाव",
+    "KVK Nandurbar": "केव्हीके नंदुरबार",
+    "KVK Aurangabad": "केव्हीके औरंगाबाद",
+    "KVK Latur": "केव्हीके लातूर",
+    "KVK Nanded": "केव्हीके नांदेड",
+    "KVK Osmanabad": "केव्हीके उस्मानाबाद",
+    "KVK Hingoli": "केव्हीके हिंगोली",
+    "KVK Beed": "केव्हीके बीड",
+    "KVK Nagpur": "केव्हीके नागपूर",
+    "KVK Amravati": "केव्हीके अमरावती",
+    "KVK Washim": "केव्हीके वाशिम",
+    "KVK Yavatmal": "केव्हीके यवतमाळ",
+    "KVK Akola": "केव्हीके अकोला",
+    "KVK Buldhana": "केव्हीके बुलढाणा",
+    "KVK Wardha": "केव्हीके वर्धा",
+    "KVK Chandrapur": "केव्हीके चंद्रपूर",
+    "KVK Gadchiroli": "केव्हीके गडचिरोली",
+    "KVK Gondia": "केव्हीके गोंदिया",
+    "KVK Bhandara": "केव्हीके भंडारा",
+    "KVK Raigad": "केव्हीके रायगड",
+    "KVK Ratnagiri": "केव्हीके रत्नागिरी",
+    "KVK Sindhudurg": "केव्हीके सिंधुदुर्ग",
+    "KVK Thane": "केव्हीके ठाणे",
+    "KVK Palghar": "केव्हीके पालघर"
   }
 };
 
@@ -358,18 +492,26 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const result: Record<string, string> = {};
       
-      // Concurrency limiting: process in batches of 5
-      const BATCH_SIZE = 5;
+      // Optimization: Group multiple strings using a separator to minimize API calls
+      // The Google Translate free API limit is roughly 2000-5000 characters per request.
+      const SEPARATOR = " ||| ";
+      
+      // Process in larger batches of 20 strings to reduce request count
+      const BATCH_SIZE = 20;
       for (let i = 0; i < missingTexts.length; i += BATCH_SIZE) {
         const batch = missingTexts.slice(i, i + BATCH_SIZE);
-        await Promise.all(
-          batch.map(async (textToTranslate) => {
-            const translated = await translateText(textToTranslate, language);
-            if (translated) {
-              result[textToTranslate] = translated;
+        const joinedText = batch.join(SEPARATOR);
+        
+        const translatedJoined = await translateText(joinedText, language);
+        
+        if (translatedJoined) {
+          const splitTranslations = translatedJoined.split(SEPARATOR);
+          batch.forEach((original, index) => {
+            if (splitTranslations[index]) {
+              result[original] = splitTranslations[index].trim();
             }
-          })
-        );
+          });
+        }
       }
 
       Object.assign(dynamicTranslationCache[language], result);
