@@ -197,113 +197,92 @@ export const NearbyKendras = () => {
         </div>
       </section>
 
-      {/* Filter Bar */}
-      <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60 mr-2">{t("Filter:")}</span>
-          {REGIONS.map((r) => (
-            <button
-              key={r.key}
-              onClick={() => handleRegionChange(r.key)}
-              className={`text-xs font-bold px-5 py-2 rounded-full transition-all duration-300 border ${
-                activeRegion === r.key
-                  ? "bg-primary text-on-primary border-primary shadow-lg shadow-primary/20"
-                  : "bg-surface-container-lowest text-on-surface-variant border-on-surface/10 hover:border-primary/30"
-              }`}
-            >
-              {t(r.label)}
-            </button>
-          ))}
+      <div className="mb-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+        <div className="overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar flex-grow">
+          <div className="flex flex-nowrap lg:flex-wrap items-center gap-3 min-w-max lg:min-w-0">
+            {REGIONS.map((r) => (
+              <button
+                key={r.key}
+                onClick={() => handleRegionChange(r.key)}
+                className={`text-xs font-bold px-5 py-2.5 rounded-full transition-all duration-300 border whitespace-nowrap ${
+                  activeRegion === r.key
+                    ? "bg-primary text-on-primary border-primary shadow-lg shadow-primary/20"
+                    : "bg-surface-container-lowest text-on-surface-variant border-on-surface/10 hover:border-primary/30"
+                }`}
+              >
+                {t(r.label)}
+              </button>
+            ))}
+          </div>
         </div>
-        
+
         <Button
-          size="md"
-          className="bg-primary text-on-primary hover:opacity-90 rounded-full px-6 shadow-xl shadow-primary/10 gap-2 w-full sm:w-auto"
           onClick={handleLocate}
           disabled={locating}
+          className="bg-primary text-on-primary hover:opacity-90 rounded-full px-8 h-11 shadow-xl shadow-primary/10 gap-3 w-full sm:w-auto shrink-0 font-headline font-bold uppercase tracking-tight text-xs"
         >
-          <Navigation className="size-4" />
-          <span className="font-headline font-bold uppercase tracking-tight text-sm">
-            {locating ? t("Locating...") : t("Find Nearest KVK")}
-          </span>
+          <Navigation className={`size-4 ${locating ? 'animate-pulse' : ''}`} />
+          {locating ? t("Locating...") : t("Find Nearest KVK")}
         </Button>
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 items-start">
-        
-        {/* Sidebar List */}
-        <div className="flex flex-col gap-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-          <header className="px-2 flex items-center justify-between sticky top-0 bg-background py-2 z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
-              {visibleKVKs.length} {t("Kendras")} {t("found")}
-            </p>
-          </header>
-          
-          {visibleKVKs.map((kvk) => (
-            <div
-              key={kvk.id}
-              onClick={() => { setMapCenter([kvk.lng, kvk.lat]); setMapZoom(11); }}
-              className={`group p-6 rounded-2xl border transition-all duration-300 cursor-pointer ${
-                activeRegion === kvk.region 
-                  ? "bg-surface-container border-primary/20" 
-                  : "bg-surface-container-lowest border-on-surface/5"
-              } hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1`}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="font-headline font-bold text-lg leading-tight group-hover:text-primary transition-colors pr-4">
-                  {t(kvk.name)}
-                </h3>
-                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded bg-primary/5 text-primary">
-                  {t("KVK")}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium mb-4">
-                <div className="p-1 rounded-md bg-surface-container-low">
-                  <Navigation className="size-3" />
-                </div>
-                <span>{t(kvk.district)} {t("District")}</span>
-                {distances[kvk.id] && (
-                  <span className="ml-auto font-bold text-primary">
-                    {distances[kvk.id].toFixed(1)} km
+      <div className="flex flex-col lg:grid lg:grid-cols-[380px_1fr] bg-surface-container-lowest rounded-3xl overflow-hidden border border-on-surface/5 shadow-2xl h-[800px] md:h-[700px] lg:h-[800px]">
+        <div className="flex flex-col h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r border-on-surface/5 bg-surface-container-lowest overflow-hidden order-2 lg:order-1">
+          <div className="p-6 border-b border-on-surface/5">
+            <h3 className="font-headline font-black text-xl flex items-center gap-2">
+              <span className="text-primary">{visibleKVKs.length}</span> {t("Kendras")} {t("found")}
+            </h3>
+          </div>
+          <div className="flex-grow overflow-y-auto p-4 space-y-4 no-scrollbar">
+            {visibleKVKs.map((kvk) => (
+              <div
+                key={kvk.id}
+                onClick={() => { setMapCenter([kvk.lng, kvk.lat]); setMapZoom(11); }}
+                className="group p-5 rounded-2xl border bg-surface-container-lowest border-on-surface/5 hover:border-primary/30 transition-all duration-300 cursor-pointer"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-headline font-bold text-lg leading-tight group-hover:text-primary transition-colors pr-4">
+                    {t(kvk.name)}
+                  </h3>
+                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded bg-primary/5 text-primary">
+                    {t("KVK")}
                   </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2 mb-6">
-                {kvk.mobileLab && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center gap-1.5 border border-amber-500/20">
-                    <Truck className="size-3" /> {t("Mobile Lab")}
-                  </span>
-                )}
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-primary/5 text-primary border border-primary/10">
-                   {t("Soil Testing")}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-on-surface/5">
-                <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-on-surface-variant/80">
-                  <Phone className="size-3" />
-                  {kvk.phone}
                 </div>
-                <a
-                  href={`https://maps.google.com/?q=${kvk.lat},${kvk.lng}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary hover:underline"
-                >
-                  {t("Directions")}
-                  <ExternalLink className="size-3" />
-                </a>
+                
+                <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium mb-4">
+                  <div className="p-1 rounded-md bg-surface-container-low">
+                    <Navigation className="size-3" />
+                  </div>
+                  <span>{t(kvk.district)} {t("District")}</span>
+                  {distances[kvk.id] && (
+                    <span className="ml-auto font-bold text-primary">
+                      {distances[kvk.id].toFixed(1)} km
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-on-surface/5">
+                  <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-on-surface-variant/80">
+                    <Phone className="size-3" />
+                    {kvk.phone}
+                  </div>
+                  <a
+                    href={`https://maps.google.com/?q=${kvk.lat},${kvk.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary hover:underline"
+                  >
+                    {t("Directions")}
+                    <ExternalLink className="size-3" />
+                  </a>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Map Container */}
-        <div className="sticky top-28 rounded-3xl overflow-hidden border border-on-surface/10 shadow-2xl shadow-primary/5 h-[700px] bg-surface-container z-0 ring-8 ring-surface-container-low/50">
+        <div className="relative h-1/2 lg:h-full order-1 lg:order-2">
           <Map center={mapCenter} zoom={mapZoom}>
             {userLocation && (
               <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
@@ -378,21 +357,6 @@ export const NearbyKendras = () => {
         </div>
       </div>
 
-      {/* Legend Footer */}
-      <footer className="mt-12 pt-8 border-t border-on-surface/5 flex flex-wrap justify-center gap-8">
-        <div className="flex items-center gap-3">
-          <div className="size-4 rounded-full bg-primary border-2 border-primary/20" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">{t("KVK Center")}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="size-4 rounded-full bg-amber-500 border-2 border-amber-200" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">{t("With Mobile Lab")}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="size-4 rounded-full bg-blue-500 border-2 border-blue-200" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">{t("Current Location")}</span>
-        </div>
-      </footer>
     </motion.div>
   );
 };

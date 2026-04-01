@@ -140,18 +140,18 @@ export const CropDetailsPage: React.FC = () => {
             <button
               id="back-to-results-btn"
               onClick={() => navigate('/predict')}
-              className="flex items-center gap-2 font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors group"
+              className="flex items-center gap-2 font-body text-xs md:text-sm text-on-surface-variant hover:text-on-surface transition-colors group"
             >
-              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1 duration-200" />
-              {t("Back to Results")}
+              <ArrowLeft className="w-3.5 h-3.5 md:w-4 md:h-4 transition-transform group-hover:-translate-x-1 duration-200" />
+              <span className="truncate max-w-[80px] sm:max-w-none">{t("Back to Results")}</span>
             </button>
           </div>
           
-          <div className="flex-shrink-0 flex justify-center">
-            <h1 className="font-headline font-bold text-lg tracking-tight text-on-surface flex items-center gap-2">
+          <div className="flex-shrink-0 flex justify-center px-2">
+            <h1 className="font-headline font-bold text-base md:text-lg tracking-tight text-on-surface flex items-center gap-2 text-center">
               {cropTranslations[slug]?.en || crop.name}
               {cropTranslations[slug]?.hi && (
-                <span className="hidden sm:inline text-sm text-on-surface-variant font-normal opacity-70">
+                <span className="hidden lg:inline text-sm text-on-surface-variant font-normal opacity-70">
                   • {cropTranslations[slug].hi} • {cropTranslations[slug].mr}
                 </span>
               )}
@@ -227,20 +227,20 @@ export const CropDetailsPage: React.FC = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.4 }}
-              className="bg-surface-container-lowest rounded-2xl p-6 border border-on-surface/10 shadow-sm"
+              className="bg-surface-container-lowest rounded-2xl p-5 md:p-6 border border-on-surface/10 shadow-sm"
             >
               <p className="font-body text-[10px] uppercase tracking-[0.25em] text-on-surface-variant mb-4">
                 {t("Cultivation Window")}
               </p>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-headline font-black text-3xl tracking-tight text-on-surface">
+                <h2 className="font-headline font-black text-2xl md:text-3xl tracking-tight text-on-surface">
                   {t(crop.season)}
                 </h2>
-                <div className="bg-surface-container p-2.5 rounded-full text-on-surface">
+                <div className="bg-surface-container p-2 md:p-2.5 rounded-full text-on-surface">
                   <SeasonIcon season={crop.season} />
                 </div>
               </div>
-              <p className="font-body text-sm text-on-surface-variant leading-relaxed">
+              <p className="font-body text-xs md:text-sm text-on-surface-variant leading-relaxed">
                 {t(crop.seasonDescription)}
               </p>
             </motion.div>
@@ -268,11 +268,11 @@ export const CropDetailsPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.4 }}
             >
-              <h2 className="font-headline font-black text-3xl md:text-[2.5rem] tracking-tighter text-on-surface mb-5 leading-[1.1]">
+              <h2 className="font-headline font-black text-2xl md:text-[2.5rem] tracking-tighter text-on-surface mb-5 leading-[1.1]">
                 {t("Why this crop is recommended")}
               </h2>
               <div className="border-l-[3px] border-on-surface/10 pl-5 text-on-surface-variant">
-                <p className="font-body leading-relaxed text-[15px] italic opacity-80">
+                <p className="font-body leading-relaxed text-sm md:text-[15px] italic opacity-80">
                   {t(crop.why)}
                 </p>
               </div>
@@ -300,11 +300,11 @@ export const CropDetailsPage: React.FC = () => {
               <div className="bg-surface-container-lowest rounded-2xl p-5 border border-on-surface/10 group hover:border-primary/30 transition-colors duration-300">
                 <div className="flex items-center gap-2 mb-4 text-on-surface-variant">
                   <Layers className="w-4 h-4 opacity-70" />
-                  <p className="font-body text-xs tracking-wide">
+                  <p className="font-body text-[10px] md:text-xs tracking-wide">
                     {t("Soil Type")}
                   </p>
                 </div>
-                <p className="font-headline font-black text-xl tracking-tight text-on-surface leading-tight">
+                <p className="font-headline font-black text-lg md:text-xl tracking-tight text-on-surface leading-tight">
                   {t(crop.soil)}
                 </p>
               </div>
@@ -362,14 +362,14 @@ export const CropDetailsPage: React.FC = () => {
 
             <div className="relative z-10">
               <div className="flex flex-col gap-4 font-body">
-                <p className="font-headline font-black text-2xl tracking-tight flex items-center mb-2">
-                  <Droplets className="w-6 h-6 mr-3 text-blue-500 dark:text-blue-400" /> {t("Water Requirement")}: {crop.water}
+                <p className="font-headline font-black text-xl md:text-2xl tracking-tight flex items-center mb-2">
+                  <Droplets className="w-5 h-5 md:w-6 md:h-6 mr-3 text-blue-500 dark:text-blue-400" /> {t("Water Requirement")}: {crop.water}
                 </p>
-                <p className="text-xl text-on-surface-variant flex items-center">
-                  <BarChart2 className="w-5 h-5 mr-3 opacity-60" /> {t("Approx")}: {t(crop.water_mm)}
+                <p className="text-lg md:text-xl text-on-surface-variant flex items-center">
+                  <BarChart2 className="w-4 h-4 md:w-5 md:h-5 mr-3 opacity-60" /> {t("Approx")}: {t(crop.water_mm)}
                 </p>
-                <p className="text-xl text-on-surface-variant flex items-center mt-1">
-                  <FileText className="w-5 h-5 mr-3 opacity-60 flex-shrink-0" /> <span className="leading-snug">{t(crop.note)}</span>
+                <p className="text-lg md:text-xl text-on-surface-variant flex items-center mt-1">
+                  <FileText className="w-4 h-4 md:w-5 md:h-5 mr-3 opacity-60 flex-shrink-0" /> <span className="leading-snug">{t(crop.note)}</span>
                 </p>
               </div>
             </div>

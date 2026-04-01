@@ -291,16 +291,16 @@ export const PredictCrop: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       className="max-w-4xl mx-auto px-6 py-20"
     >
-      <header className="mb-16 text-center">
-        <h1 className="font-headline font-black text-5xl md:text-7xl tracking-tighter mb-4 text-primary">
+      <header className="mb-12 md:mb-16 text-center">
+        <h1 className="font-headline font-black text-4xl sm:text-5xl md:text-7xl tracking-tighter mb-4 text-primary">
           {t('Predictive Cultivation.')}
         </h1>
-        <p className="font-body text-on-surface-variant max-w-xl mx-auto text-lg leading-relaxed">
+        <p className="font-body text-on-surface-variant max-w-xl mx-auto text-base md:text-lg leading-relaxed">
           {t('Input your soil and environmental parameters to identify the most suitable crops for your specific terrain.')}
         </p>
       </header>
 
-      <section className="bg-surface-container-low p-8 md:p-12 rounded-xl mb-12">
+      <section className="bg-surface-container-low p-6 md:p-12 rounded-xl mb-12">
         {errorMsg && (
           <div className="mb-8 p-4 bg-red-500/10 border-l-4 border-red-500 rounded-r-lg flex items-start gap-4 shadow-sm backdrop-blur-sm">
             <div className="bg-red-500/20 p-1 rounded-full text-red-500 flex-shrink-0 mt-0.5">
@@ -311,7 +311,7 @@ export const PredictCrop: React.FC = () => {
             <p className="font-headline font-bold text-red-600 dark:text-red-400 self-center">{errorMsg}</p>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           <div className="flex flex-col gap-2">
             <label className="font-headline font-bold text-sm tracking-wide text-primary uppercase">{t('Nitrogen (N)')}</label>
             <input 
@@ -427,7 +427,7 @@ export const PredictCrop: React.FC = () => {
         <section id="results" className="mt-24">
           <div className="flex items-center gap-4 mb-8">
             <div className="h-px flex-grow bg-surface-container-highest"></div>
-            <h2 className="font-headline font-black text-2xl tracking-tighter uppercase">{t('Top 3 Recommended Crops')}</h2>
+            <h2 className="font-headline font-black text-xl md:text-2xl tracking-tighter uppercase text-center">{t('Top 3 Recommended Crops')}</h2>
             <div className="h-px flex-grow bg-surface-container-highest"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -515,12 +515,12 @@ const ResultCard: React.FC<{ result: PredictionResult; label: string; name: stri
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-      className="bg-surface-container-lowest p-6 rounded-2xl group hover:bg-surface-container transition-all duration-500 flex flex-col items-center text-center py-10 cursor-pointer border border-on-surface/5 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-2"
+      className="bg-surface-container-lowest p-5 md:p-6 rounded-2xl group hover:bg-surface-container transition-all duration-500 flex flex-col items-center text-center py-8 md:py-10 cursor-pointer border border-on-surface/5 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 md:hover:-translate-y-2"
     >
       <p className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/70 mb-4 font-bold">{label}</p>
       
       <div className="crop-card mb-4 min-w-[140px]">
-        <h3 className="text-2xl font-display font-bold text-primary mb-1">{displayName}</h3>
+        <h3 className="text-xl md:text-2xl font-display font-bold text-primary mb-1">{displayName}</h3>
         {translation?.hi && <p className="text-xs text-on-surface-variant/80 font-medium">{translation.hi}</p>}
         {translation?.mr && <p className="text-xs text-on-surface-variant/80 font-medium">{translation.mr}</p>}
       </div>
