@@ -62,7 +62,8 @@ export const ContactSupport: React.FC = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
-      const response = await fetch("https://formspree.io/f/xkopzjro", {
+      const formspreeId = import.meta.env.VITE_FORMSPREE_ID;
+      const response = await fetch(`https://formspree.io/f/${formspreeId}`, {
         method: "POST",
         body: formData,
         headers: {

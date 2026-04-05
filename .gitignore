@@ -1,34 +1,32 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 db.sqlite3
 
-# Node / React
+# ── Virtual environment ───────────────────────────────────────────────────────
+.venv/
+
+# ── Node / React / Vite ───────────────────────────────────────────────────────
 node_modules/
 dist/
 build/
+coverage/
 
-# Environment files
-.env
-.env.local
+# ── Environment files ─────────────────────────────────────────────────────────
+# Ignore ALL .env files by default
+.env*
+# But allow .env.example to be committed (safe — no real secrets)
+!.env.example
 
-# Editor files
+# ── Editor files ──────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 
-# OS files
+# ── OS files ──────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# Log files
+# ── Log files ─────────────────────────────────────────────────────────────────
 *.log
-
-# Do NOT ignore important files:
-# - package.json
-# - requirements.txt
-# - src/ (frontend source)
-# - backend/ (Django project)
-# - ml/ (ML scripts)
-# - predictions/ (Django app)

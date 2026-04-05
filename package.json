@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@lottiefiles/dotlottie-react": "^0.18.4",
-    "lottie-react": "^2.4.1",
-    "motion": "^12.35.2"
-  }
-}

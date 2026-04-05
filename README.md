@@ -1,114 +1,148 @@
-# KrushiSense – Crop Recommendation System
+# 🌾 KrushiSense — Smart Agricultural Intelligence for Maharashtra Farmers
 
-## Description
-KrushiSense is a machine learning-based crop recommendation system designed to help farmers identify the most suitable crops to grow based on soil and environmental conditions. The system analyzes the following parameters:
-
-- Nitrogen (N)
-- Phosphorus (P)
-- Potassium (K)
-- Soil pH
-- Temperature
-- Humidity
-- Rainfall
-
-Based on these inputs, the model predicts the top 3 crops suitable for the given conditions.
-
-## Features
-- Interactive multi-step input wizard
-- Soil parameter-based crop prediction
-- Top 3 crop recommendations
-- Crop names displayed in English, Hindi, and Marathi
-- Background video landing page
-- Farmer-friendly UI
-- Multilingual interface
-- Modern results dashboard
-
-## Technologies Used
-
-**Frontend:**
-- React
-- TypeScript
-- TailwindCSS
-
-**Backend:**
-- Python
-- Django
-
-**Machine Learning:**
-- Crop Recommendation Model trained on agricultural dataset
-
-## Project Structure
-
-```
-backend/           # Django backend and ML model
-  ├── backend/     # Django project files
-  ├── ml/         # Machine learning scripts and data
-  └── predictions/ # Django app for predictions
-frontend/          # React frontend (TypeScript + TailwindCSS)
-  ├── src/        # Source code (components, pages, assets)
-  └── public/     # Static assets
-```
-
-- **backend/**: Contains the Django project, ML training scripts, and prediction logic.
-- **frontend/**: Contains the React app, UI components, and static assets.
-
-## Installation
-
-1. **Clone the repository:**
-   ```sh
-   git clone <repo-url>
-   cd "Agri Analysis"
-   ```
-
-2. **Backend Setup:**
-   - Create and activate a Python virtual environment:
-     ```sh
-     python -m venv .venv
-     # On Windows:
-     .venv\Scripts\activate
-     # On macOS/Linux:
-     source .venv/bin/activate
-     ```
-   - Install dependencies:
-     ```sh
-     pip install -r requirements.txt
-     ```
-   - Run migrations:
-     ```sh
-     cd backend
-     python manage.py migrate
-     ```
-   - Start the backend server:
-     ```sh
-     python manage.py runserver
-     ```
-
-3. **Frontend Setup:**
-   - Install Node.js (if not already installed).
-   - Install dependencies:
-     ```sh
-     cd frontend
-     npm install
-     ```
-   - Start the frontend server:
-     ```sh
-     npm run dev
-     ```
-
-## Usage
-
-1. Start the backend server (see above).
-2. Start the frontend server (see above).
-3. Open your browser and navigate to [http://localhost:5173](http://localhost:5173) to use the application.
-
-## Future Improvements
-- Real-time weather API integration
-- Mobile-friendly responsive design
-- Farmer advisory system
-- Market price prediction for crops
-- Enhanced data visualization and analytics
-- User authentication and personalized dashboards
+KrushiSense is a data-driven web application that helps farmers choose the right crop based on their soil and environmental conditions, find the nearest Krishi Vigyan Kendra (KVK), and access agricultural support — all in English, Hindi, and Marathi.
 
 ---
 
-Feel free to contribute or suggest new features to make KrushiSense more helpful for farmers!
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 🌱 **Crop Prediction** | Enter soil NPK, pH, temperature, humidity, and rainfall to get the top 3 recommended crops |
+| 🗺️ **KVK Map** | Interactive map of all 33 official ICAR Krishi Vigyan Kendras across Maharashtra with distances, soil testing info, and Google Maps directions |
+| 🌐 **Multi-language** | Full UI in English, Hindi, and Marathi with static + dynamic translation |
+| 🌙 **Dark / Light Mode** | System-aware theme with persistent user preference |
+| 📬 **Contact Support** | Integrated contact form via Formspree |
+| 📄 **Legal Pages** | Privacy Policy and Terms of Service |
+
+---
+
+## 🛠 Tech Stack
+
+**Frontend**
+- [Vite](https://vitejs.dev/) + [React 19](https://react.dev/) + TypeScript
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [React Router v7](https://reactrouter.com/)
+- [React Leaflet](https://react-leaflet.js.org/) + [Leaflet](https://leafletjs.com/) — KVK map
+- [Framer Motion / motion](https://motion.dev/) — animations
+- [Lucide React](https://lucide.dev/) — icons
+- [Formspree](https://formspree.io/) — contact form backend
+
+**Backend**
+- [Python 3](https://www.python.org/) + [Django 5](https://www.djangoproject.com/)
+- Machine learning prediction via scikit-learn
+- SQLite database
+
+**Data Sources**
+- Maharashtra crop dataset (Kaggle / ICAR)
+- KVK location data — [ICAR Official Network](https://kvk.icar.gov.in/)
+- Map tiles — OpenStreetMap via Leaflet (no API key required)
+
+---
+
+## 📁 Project Structure
+
+```
+Agri Analysis/
+├── backend/                       # Django backend
+│   ├── backend/                   # Django project settings, URLs
+│   ├── ml/                        # ML training scripts & dataset
+│   │   └── data/crop_merged.csv
+│   └── predictions/               # Django app: ML inference API
+├── frontend/                      # Vite + React frontend
+│   ├── public/
+│   │   └── data/crop_merged.csv   # Served statically for frontend prediction
+│   └── src/
+│       ├── components/            # Page & feature components
+│       │   └── ui/                # Reusable UI primitives (button, map)
+│       ├── contexts/              # React contexts (Language, Theme)
+│       ├── data/                  # cropData.ts — static crop metadata
+│       └── lib/                   # Utility functions (future)
+├── scripts/                       # One-off data update scripts
+├── .env.example                   # Safe to commit — lists required variables
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 🚀 Running Locally
+
+### 1. Clone the repository
+
+```sh
+git clone <repo-url>
+cd "Agri Analysis"
+```
+
+### 2. Backend Setup
+
+```sh
+# Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\activate         # Windows
+# source .venv/bin/activate    # macOS / Linux
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run migrations
+cd backend
+python manage.py migrate
+
+# Start Django server
+python manage.py runserver
+```
+
+Backend runs at: **http://127.0.0.1:8000/**
+
+### 3. Frontend Setup
+
+```sh
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Set up environment variables
+copy .env.example .env.local
+# Edit .env.local and fill in your VITE_FORMSPREE_ID
+
+# Start dev server
+npm run dev
+```
+
+Frontend runs at: **http://localhost:3000/**
+
+---
+
+## 🔑 Environment Variables
+
+Copy `frontend/.env.example` to `frontend/.env.local` and fill in your values.
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_FORMSPREE_ID` | Yes | Formspree form endpoint ID for the Contact page |
+| `VITE_APP_URL` | No | Base URL of the app (default: `http://localhost:3000`) |
+| `DJANGO_SECRET_KEY` | Prod only | Django secret key — insecure dev key used automatically in dev |
+
+> `.env.local` is gitignored and must never be committed.
+
+---
+
+## 📊 Data Sources
+
+- **Crop dataset**: Maharashtra agricultural dataset (ICAR) — soil NPK, pH, temperature, humidity, rainfall, region, district, soil colour, fertilizer
+- **KVK data**: 33 Krishi Vigyan Kendras across Maharashtra from [ICAR Official Directory](https://kvk.icar.gov.in/)
+- **Map tiles**: OpenStreetMap (via Leaflet, no API key required)
+
+---
+
+## 📜 License
+
+MIT — Free to use, modify, and distribute.
+
+---
+
+*Built for Maharashtra farmers. Made with ❤️ using open data.*
