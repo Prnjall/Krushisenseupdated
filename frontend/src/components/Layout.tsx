@@ -158,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) =
         />
       )}
       
-      <div className="lg:hidden">
+      <div className={`lg:hidden ${isTransparent ? 'sm-header-transparent' : 'sm-header-scrolled'}`}>
         <StaggeredMenu 
           isFixed={true}
           position="right"
