@@ -527,7 +527,7 @@ export const PredictCrop: React.FC = () => {
                 onChange={(e) => setLocationQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchLocation(e)}
                 placeholder={t('Enter city or village name...')}
-                className="flex-1 bg-surface-container border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary transition-all"
+                className="flex-1 w-full min-w-0 bg-surface-container-highest border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary transition-all"
               />
               <button 
                 type="button"
@@ -562,7 +562,7 @@ export const PredictCrop: React.FC = () => {
           )}
 
           {weatherData && (
-            <div className="mt-6 bg-surface-container p-5 rounded-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+            <div className="mt-6 bg-surface-container-high p-5 rounded-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
               <div>
                 <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">📍 {t('Location')}</p>
                 <p className="font-headline font-bold text-lg">{weatherData.name}</p>
@@ -585,7 +585,7 @@ export const PredictCrop: React.FC = () => {
           )}
 
           {weatherForecast && weatherForecast.length > 0 && (
-            <div className="mt-4 bg-surface-container p-5 rounded-lg border border-primary/10 shadow-sm">
+            <div className="mt-4 bg-surface-container-high p-5 rounded-lg border border-primary/10 shadow-sm">
               <h3 className="font-headline font-bold text-md text-primary mb-4">{t('7-Day Weather Outlook')}</h3>
               <div className="flex flex-row overflow-x-auto gap-4 pb-2 snap-x">
                 {weatherForecast.map((day, idx) => {
@@ -606,7 +606,7 @@ export const PredictCrop: React.FC = () => {
 
           {/* Satellite Integration Section */}
           {(satelliteLoading || satelliteData || satelliteError) && (
-            <div className="mt-4 bg-surface-container p-5 rounded-lg border border-primary/20">
+            <div className="mt-4 bg-surface-container-high p-5 rounded-lg border border-primary/20">
               <div className="flex items-center gap-2 mb-4">
                 <div className="bg-primary/20 p-1.5 rounded text-primary">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -901,7 +901,7 @@ export const PredictCrop: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-surface-container p-4 rounded-2xl">
+                  <div className="bg-surface-container-high p-4 rounded-2xl">
                     <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Sustainable practices")}</h4>
                     <ul className="list-disc pl-5 font-body text-on-surface-variant space-y-1">
                       {aiAdvisory.sustainable_practices?.map((practice: string, i: number) => (
@@ -910,7 +910,7 @@ export const PredictCrop: React.FC = () => {
                     </ul>
                   </div>
 
-                  <div className="bg-surface-container p-4 rounded-2xl">
+                  <div className="bg-surface-container-high p-4 rounded-2xl">
                     <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Next steps")}</h4>
                     <ul className="list-disc pl-5 font-body text-on-surface-variant space-y-1">
                       {aiAdvisory.next_steps?.map((step: string, i: number) => (
