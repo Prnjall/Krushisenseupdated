@@ -101,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) =
             />
           </div>
           
-          <div className="flex items-center gap-3 md:gap-6">
+          <div className="hidden lg:flex items-center gap-3 md:gap-6">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -151,6 +151,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) =
       </nav>
 
       {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1010] lg:hidden transition-opacity duration-300"
+          aria-hidden="true"
+        />
+      )}
+      
       <div className="lg:hidden">
         <StaggeredMenu 
           isFixed={true}
@@ -164,7 +171,43 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) =
           accentColor="#006b5f" // KrushiSense primary color
           onMenuOpen={() => setIsMobileMenuOpen(true)}
           onMenuClose={() => setIsMobileMenuOpen(false)}
-        />
+        >
+          {/* Mobile Theme and Language Controls */}
+          <div className="flex flex-col gap-4 mt-2">
+            <div className="flex items-center justify-between">
+              <span className="font-headline font-bold text-on-surface uppercase tracking-tight text-lg">Theme</span>
+              <button
+                onClick={toggleTheme}
+                className={`p-3 rounded-full transition-colors bg-surface-container-low hover:bg-surface-container-high text-on-surface`}
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <span className="font-headline font-bold text-on-surface uppercase tracking-tight text-lg">Language</span>
+              <div className="flex flex-col gap-2 bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`w-full text-left px-4 py-3 font-headline font-bold text-base transition-colors ${
+                      language === lang.code ? 'bg-primary text-on-primary' : 'hover:bg-surface-container-low text-on-surface'
+                    } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    onClick={() => {
+                      if (!loading) {
+                        setLanguage(lang.code);
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    {lang.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </StaggeredMenu>
       </div>
     </>
   );
