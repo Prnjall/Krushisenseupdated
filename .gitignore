@@ -1,32 +1,56 @@
-# ── Python ────────────────────────────────────────────────────────────────────
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Django
+*.sqlite3
 db.sqlite3
+staticfiles/
+media/
 
-# ── Virtual environment ───────────────────────────────────────────────────────
-.venv/
+# Environment / secrets
+.env
+.env.*
+!.env.example
 
-# ── Node / React / Vite ───────────────────────────────────────────────────────
+# Node
 node_modules/
 dist/
 build/
-coverage/
+.vite/
 
-# ── Environment files ─────────────────────────────────────────────────────────
-# Ignore ALL .env files by default
-.env*
-# But allow .env.example to be committed (safe — no real secrets)
-!.env.example
-
-# ── Editor files ──────────────────────────────────────────────────────────────
+# IDE
 .vscode/
 .idea/
 
-# ── OS files ──────────────────────────────────────────────────────────────────
+# OS
 .DS_Store
 Thumbs.db
 
-# ── Log files ─────────────────────────────────────────────────────────────────
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Training datasets
+backend/ml/dataset/
+backend/ml/disease_dataset/
+backend/ml/data_backups/
+backend/predictions/models/historical_backups/
+
+# Dataset-generated artifacts
+backend/ml/*dataset*.csv
+backend/ml/final_dataset_inventory.csv
+backend/ml/dataset_inventory.csv
+
+# Training logs / generated reports
+backend/ml/*.txt
+backend/ml/disease_training/*.txt
+backend/ml/interoperability/*.txt
+
+# Temporary files
 *.log
+*.tmp

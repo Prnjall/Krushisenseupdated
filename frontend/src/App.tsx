@@ -10,6 +10,7 @@ import { AnimatePresence } from 'motion/react';
 import { LanguageProvider, useTranslation } from './contexts/LanguageContext';
 import { NearbyKendras } from './components/NearbyKendras';
 
+import { DiseaseDetection } from './components/DiseaseDetection';
 import { TermsOfService } from './components/TermsOfService';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { ContactSupport } from './components/ContactSupport';
@@ -23,6 +24,7 @@ function MainLayout() {
   const pathToPage = (path: string) => {
     if (path === '/' || path === '') return 'home';
     if (path.startsWith('/predict')) return 'predict';
+    if (path.startsWith('/disease-detection')) return 'disease-detection';
     if (path.startsWith('/how-it-works')) return 'how-it-works';
     if (path.startsWith('/nearby-kendras')) return 'nearby-kendras';
     if (path.startsWith('/privacy-policy')) return 'privacy-policy';
@@ -36,6 +38,7 @@ function MainLayout() {
   const setCurrentPage = (page: string) => {
     if (page === 'home') navigate('/');
     else if (page === 'predict') navigate('/predict');
+    else if (page === 'disease-detection') navigate('/disease-detection');
     else if (page === 'how-it-works') navigate('/how-it-works');
     else if (page === 'nearby-kendras') navigate('/nearby-kendras');
     else if (page === 'privacy-policy') navigate('/privacy-policy');
@@ -48,11 +51,12 @@ function MainLayout() {
     <div className="min-h-screen flex flex-col relative">
       <ScrollToTop />
       <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
-      <main className="flex-grow">
+      <main className={`flex-grow ${currentPage === 'home' ? '' : 'pt-20'}`}>
         <AnimatePresence mode="wait">
           <Routes location={location}>
             <Route path="/" element={<Home onStart={() => setCurrentPage('predict')} />} />
             <Route path="/predict" element={<PredictCrop />} />
+            <Route path="/disease-detection" element={<DiseaseDetection />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/nearby-kendras" element={<NearbyKendras />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

@@ -1,7 +1,69 @@
 import React, { useEffect } from 'react';
 import { TrendingUp, Brain, Leaf, Clock, Wallet, MousePointer2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, useMotionValue, useSpring } from 'motion/react';
 import { useTranslation } from '../contexts/LanguageContext';
+
+const HeroBackgroundImage = ({ heroRef }: { heroRef: React.RefObject<HTMLElement> }) => {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 30, stiffness: 100 });
+  const smoothY = useSpring(mouseY, { damping: 30, stiffness: 100 });
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      
+      if (prefersReducedMotion || !hasHover) {
+        mouseX.set(0);
+        mouseY.set(0);
+        return;
+      }
+      
+      const rect = hero.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+      
+      // Target movement: X ±8px, Y ±6px
+      mouseX.set(-x * 8); 
+      mouseY.set(-y * 6);
+    };
+
+    const handleMouseLeave = () => {
+      mouseX.set(0);
+      mouseY.set(0);
+    };
+
+    hero.addEventListener('mousemove', handleMouseMove);
+    hero.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      hero.removeEventListener('mousemove', handleMouseMove);
+      hero.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [mouseX, mouseY, heroRef]);
+
+  return (
+    <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+      <motion.div 
+        style={{ x: smoothX, y: smoothY }}
+        className="absolute inset-0 w-full h-full lg:inset-[-20px] lg:w-[calc(100%+40px)] lg:h-[calc(100%+40px)]"
+      >
+        <img 
+          src="/images/hero-bg.jpg" 
+          alt="" 
+          className="w-full h-full object-cover lg:object-center object-bottom"
+        />
+        {/* Subtle overlay for readability without fading to solid black at the bottom */}
+        <div className="absolute inset-0 bg-black/50 lg:bg-black/40" />
+        {/* Dark gradient at the very top to ensure Navbar text is visible */}
+        <div className="absolute inset-x-0 top-0 h-32 lg:h-40 bg-linear-to-b from-black/70 to-transparent pointer-events-none" />
+      </motion.div>
+    </div>
+  );
+};
 
 interface HomeProps {
   onStart: () => void;
@@ -9,6 +71,7 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ onStart }) => {
   const { t, language, translateBatch } = useTranslation();
+  const heroRef = React.useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (language !== 'en') {
@@ -41,34 +104,25 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
       exit={{ opacity: 0 }}
     >
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 md:px-8 pt-12 md:pt-24 pb-16 md:pb-32">
-        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
-          <div className="md:w-1/2 text-left">
-            <h2 className="font-headline font-medium text-on-surface-variant tracking-widest uppercase text-xs md:text-sm mb-4 md:mb-6">
-              {t('Smart Crop Recommendation System')}
-            </h2>
-            <h1 className="font-headline font-extrabold text-5xl sm:text-7xl md:text-8xl text-primary tracking-tighter mb-6 md:mb-8 leading-none">
-              KrushiSense
-            </h1>
-            <p className="font-body text-base md:text-xl text-on-surface-variant leading-relaxed mb-8 md:mb-12">
-              {t('KrushiSense is a smart agriculture web application that helps farmers choose the most suitable crop based on soil and environmental conditions. The system uses machine learning to analyze important factors like Nitrogen (N), Phosphorus (P), Potassium (K), pH level, temperature, humidity, and rainfall.')}
-            </p>
-            <button 
-              onClick={onStart}
-              className="w-full sm:w-auto bg-primary text-on-primary px-8 md:px-10 py-4 md:py-5 rounded-lg font-headline font-bold text-lg md:text-xl transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-3 shadow-2xl shadow-primary/10"
-            >
-              {t('Start Prediction')}
-              <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-          </div>
-          <div className="md:w-1/2 w-full aspect-square rounded-2xl overflow-hidden shadow-2xl">
-            <img 
-              src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=1200" 
-              alt="Sustainable farming" 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
+      <section ref={heroRef} className="relative w-full overflow-hidden flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 md:px-8 py-24 md:py-32 border-b border-outline-variant/10">
+        <HeroBackgroundImage heroRef={heroRef} />
+        <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center text-center mt-8 md:mt-12">
+          <h2 className="font-headline font-bold text-white/90 tracking-[0.2em] uppercase text-[10px] sm:text-xs md:text-sm mb-4 md:mb-6 px-2">
+            {t('Smart Crop Recommendation System')}
+          </h2>
+          <h1 className="font-headline font-extrabold text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white tracking-tighter mb-6 md:mb-8 leading-[1.1] drop-shadow-lg px-2 break-words">
+            KrushiSense
+          </h1>
+          <p className="font-body text-sm sm:text-base md:text-xl text-white/95 leading-relaxed mb-10 md:mb-12 max-w-[90%] sm:max-w-2xl lg:max-w-3xl mx-auto font-medium drop-shadow-md">
+            {t('KrushiSense is a smart agriculture web application that helps farmers choose the most suitable crop based on soil and environmental conditions. The system uses machine learning to analyze important factors like Nitrogen (N), Phosphorus (P), Potassium (K), pH level, temperature, humidity, and rainfall.')}
+          </p>
+          <button 
+            onClick={onStart}
+            className="w-full sm:w-auto max-w-xs mx-auto bg-primary text-on-primary px-8 md:px-10 py-4 md:py-5 rounded-xl font-headline font-bold text-base md:text-xl transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-3 shadow-2xl shadow-primary/30"
+          >
+            {t('Start Prediction')}
+            <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
         </div>
       </section>
 
@@ -138,10 +192,12 @@ export const Home: React.FC<HomeProps> = ({ onStart }) => {
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 md:p-12 text-center bg-linear-to-t from-background via-transparent to-transparent">
-            <div className="mt-4">
-              <h3 className="font-headline text-3xl md:text-5xl font-extrabold text-primary mb-4 md:mb-6 tracking-tighter">{t('Cultivating the Future')}</h3>
-              <p className="font-body text-sm md:text-lg text-on-surface max-w-xl">
+          {/* Overlay to ensure text readability */}
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 md:p-12 text-center bg-linear-to-t from-background/80 via-transparent to-transparent pointer-events-none">
+            <div className="mt-4 relative z-10 pointer-events-auto">
+              <h3 className="font-headline text-3xl md:text-5xl font-extrabold text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] mb-4 md:mb-6 tracking-tighter">{t('Cultivating the Future')}</h3>
+              <p className="font-body text-sm md:text-lg text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] max-w-xl mx-auto font-medium">
                 {t('Harnessing the power of precision agriculture to ensure food security through digital curation.')}
               </p>
             </div>

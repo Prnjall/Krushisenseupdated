@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Database, RefreshCw, Cpu, BadgeCheck, Info, Microscope, Landmark, RadioReceiver } from 'lucide-react';
+import { Info, Microscope, Landmark, RadioReceiver, Sprout, CloudRain, Satellite, Bug, BrainCircuit, Network } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 
 export const HowItWorks: React.FC = () => {
@@ -11,15 +11,19 @@ export const HowItWorks: React.FC = () => {
       translateBatch([
         'The Science Behind The Harvest.',
         'KrushiSense bridges traditional wisdom and modern data science to deliver precision crop recommendations.',
-        'The Workflow',
-        'Input Data',
-        'Enter your specific soil metrics: Nitrogen (N), Phosphorus (P), Potassium (K), pH levels, and environmental factors like Temperature, Humidity, and Rainfall.',
-        'Data Processing',
-        'Your information is securely transmitted to our backend API where it is normalized and prepared for analysis using specialized agricultural algorithms.',
-        'Machine Learning',
-        'Our pre-trained ML model cross-references your soil profile against thousands of successful harvest data points to find the optimal match.',
-        'Recommendation',
-        'Receive a ranked list of the top 3 crops most likely to thrive in your current environment, ensuring maximum yield and resource efficiency.',
+        'Platform Capabilities',
+        'Predict the Best Crop',
+        'Our pre-trained ML model cross-references your soil profile against thousands of successful harvest data points to find the optimal match with top-3 recommendations.',
+        'Monitor Weather',
+        'Access current weather and a 7-day forecast with deterministic agricultural risk signals based on real-time temperature and precipitation trends.',
+        'Observe Vegetation',
+        'Leverage Sentinel-2 L2A satellite imagery to calculate NDVI, giving you observation freshness and vegetation insight without leaving your field.',
+        'Screen Crop Diseases',
+        'Upload an image or use your camera to let our MobileNetV3 ONNX model detect diseases in supported crops with strict status-based safety handling.',
+        'Get AI Agricultural Advice',
+        'Our Gemini-powered engine combines your available agricultural context, weather, and satellite data to provide safe, sustainable recommendations and disease management advice.',
+        'Interoperate With Systems',
+        'Designed for the BRICS AgriN initiative, external agricultural systems can securely provide context to our advisory engine via a canonical observation schema.',
         'Important Note: The accuracy of the recommendation depends on correct input values. Precision in soil testing leads to precision in results.',
         'Resources',
         'Where to get your data.',
@@ -65,33 +69,45 @@ export const HowItWorks: React.FC = () => {
       <section className="bg-surface-container-low -mx-6 md:-mx-8 px-6 md:px-8 py-16 md:py-24">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12 md:mb-16">
-            <h2 className="font-headline text-3xl md:text-4xl font-extrabold tracking-tight text-primary">{t('The Workflow')}</h2>
+            <h2 className="font-headline text-3xl md:text-4xl font-extrabold tracking-tight text-primary">{t('Platform Capabilities')}</h2>
             <div className="w-12 md:w-16 h-1 bg-primary mt-4"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             <WorkflowStep 
               num="01" 
-              icon={<Database className="w-8 h-8 md:w-10 md:h-10" />} 
-              title={t('Input Data')} 
-              desc={t('Enter your specific soil metrics: Nitrogen (N), Phosphorus (P), Potassium (K), pH levels, and environmental factors like Temperature, Humidity, and Rainfall.')} 
+              icon={<Sprout className="w-8 h-8 md:w-10 md:h-10" />} 
+              title={t('Predict the Best Crop')} 
+              desc={t('Our pre-trained ML model cross-references your soil profile against thousands of successful harvest data points to find the optimal match with top-3 recommendations.')} 
             />
             <WorkflowStep 
               num="02" 
-              icon={<RefreshCw className="w-8 h-8 md:w-10 md:h-10" />} 
-              title={t('Data Processing')} 
-              desc={t('Your information is securely transmitted to our backend API where it is normalized and prepared for analysis using specialized agricultural algorithms.')} 
+              icon={<CloudRain className="w-8 h-8 md:w-10 md:h-10" />} 
+              title={t('Monitor Weather')} 
+              desc={t('Access current weather and a 7-day forecast with deterministic agricultural risk signals based on real-time temperature and precipitation trends.')} 
             />
             <WorkflowStep 
               num="03" 
-              icon={<Cpu className="w-8 h-8 md:w-10 md:h-10" />} 
-              title={t('Machine Learning')} 
-              desc={t('Our pre-trained ML model cross-references your soil profile against thousands of successful harvest data points to find the optimal match.')} 
+              icon={<Satellite className="w-8 h-8 md:w-10 md:h-10" />} 
+              title={t('Observe Vegetation')} 
+              desc={t('Leverage Sentinel-2 L2A satellite imagery to calculate NDVI, giving you observation freshness and vegetation insight without leaving your field.')} 
             />
             <WorkflowStep 
               num="04" 
-              icon={<BadgeCheck className="w-8 h-8 md:w-10 md:h-10" />} 
-              title={t('Recommendation')} 
-              desc={t('Receive a ranked list of the top 3 crops most likely to thrive in your current environment, ensuring maximum yield and resource efficiency.')} 
+              icon={<Bug className="w-8 h-8 md:w-10 md:h-10" />} 
+              title={t('Screen Crop Diseases')} 
+              desc={t('Upload an image or use your camera to let our MobileNetV3 ONNX model detect diseases in supported crops with strict status-based safety handling.')} 
+            />
+            <WorkflowStep 
+              num="05" 
+              icon={<BrainCircuit className="w-8 h-8 md:w-10 md:h-10" />} 
+              title={t('Get AI Agricultural Advice')} 
+              desc={t('Our Gemini-powered engine combines your available agricultural context, weather, and satellite data to provide safe, sustainable recommendations and disease management advice.')} 
+            />
+            <WorkflowStep 
+              num="06" 
+              icon={<Network className="w-8 h-8 md:w-10 md:h-10" />} 
+              title={t('Interoperate With Systems')} 
+              desc={t('Designed for the BRICS AgriN initiative, external agricultural systems can securely provide context to our advisory engine via a canonical observation schema.')} 
             />
           </div>
           <div className="mt-8 md:mt-12 bg-surface-dim p-5 md:p-6 rounded-xl border-l-4 border-primary flex flex-col md:flex-row items-center gap-4 md:gap-6">

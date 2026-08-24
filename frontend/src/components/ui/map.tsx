@@ -73,19 +73,11 @@ export const MapMarker: React.FC<MapMarkerProps> = ({ longitude, latitude, child
 };
 
 export const MarkerContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Leaflet Marker doesn't easily support arbitrary HTML as children without a custom icon
-  // For simplicity, we'll just render nothing here and let the Marker handle the icon
-  // OR we can use DivIcon if we want to match the user's "size-5 rounded-full" design.
-  return null; 
+
+  return null;
 };
 
-// To fully support the user's custom marker design, we'll need a way to pass a DivIcon.
-// But for now, let's keep it simple or implement a custom marker component if needed.
-// Actually, the user's code has:
-// <MarkerContent>
-//   <div className="size-5 rounded-full bg-blue-500 ..." />
-// </MarkerContent>
-// I should use L.divIcon to render this.
+
 
 export const MarkerLabel: React.FC<{ children: React.ReactNode; position?: string }> = ({ children }) => {
   return null; // Tooltip could be used here

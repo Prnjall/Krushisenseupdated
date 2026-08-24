@@ -121,6 +121,7 @@ function calculatePredictCrop(data: SoilData, allRows: any[]): PredictionResult[
   return top3;
 }
 import { useTranslation } from '../contexts/LanguageContext';
+import { safeFetchJson } from '../lib/api';
 
 export const PredictCrop: React.FC = () => {
   const { t, language, translateBatch } = useTranslation();
@@ -163,6 +164,162 @@ export const PredictCrop: React.FC = () => {
     }
     return null;
   });
+
+  const [locationQuery, setLocationQuery] = useState("");
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+  const [weatherData, setWeatherData] = useState<{ name: string; temp: number; humidity: number; precip: number } | null>(null);
+  const [weatherForecast, setWeatherForecast] = useState<any[] | null>(null);
+  const [weatherForecastSummary, setWeatherForecastSummary] = useState<any>(null);
+  const [weatherRiskSignals, setWeatherRiskSignals] = useState<string[]>([]);
+
+  const [satelliteLoading, setSatelliteLoading] = useState(false);
+  const [satelliteError, setSatelliteError] = useState<string | null>(null);
+  const [satelliteData, setSatelliteData] = useState<{ 
+    ndvi: number; 
+    date_acquired: string; 
+    cloud_cover: number; 
+    source: string; 
+    days_since: number 
+  } | null>(null);
+
+  const [aiAdvisoryLoading, setAiAdvisoryLoading] = useState(false);
+  const [aiAdvisoryError, setAiAdvisoryError] = useState<string | null>(null);
+  const [aiAdvisory, setAiAdvisory] = useState<any>(null);
+
+  const fetchWeather = async (lat: number, lon: number, name: string) => {
+    setWeatherLoading(true);
+    setWeatherError(null);
+    try {
+      const { success, data, error } = await safeFetchJson(
+        `/api/weather?lat=${lat}&lon=${lon}`, 
+        undefined, 
+        t('Weather data is currently unavailable. Please try again later.'), 
+        t('Unable to connect to the service. Please check your internet connection and try again.')
+      );
+      if (!success) throw new Error(error);
+      
+      const temp = data.weather.temperature;
+      const humidity = data.weather.humidity;
+      const precip = data.weather.current_precipitation;
+      
+      setWeatherData({ name, temp, humidity, precip });
+      setWeatherForecast(data.forecast || null);
+      setWeatherForecastSummary(data.forecast_summary || null);
+      setWeatherRiskSignals(data.risk_signals || []);
+      
+      setFormData(prev => ({
+        ...prev,
+        temp,
+        humidity
+      }));
+    } catch (e) {
+      setWeatherError((e as Error).message);
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
+  const fetchSatelliteData = async (lat: number, lon: number) => {
+    setSatelliteLoading(true);
+    setSatelliteError(null);
+    try {
+      const { success, data, error } = await safeFetchJson(
+        `/api/satellite-ndvi?lat=${lat}&lon=${lon}`, 
+        undefined, 
+        t('Satellite data is currently unavailable. Please try again later.'), 
+        t('Unable to connect to the service. Please check your internet connection and try again.')
+      );
+      if (!success) {
+        throw new Error(error);
+      }
+      setSatelliteData({
+        ndvi: data.value,
+        date_acquired: data.date_acquired,
+        cloud_cover: data.cloud_cover_percentage,
+        source: data.source,
+        days_since: data.days_since_observation
+      });
+    } catch (e) {
+      setSatelliteError((e as Error).message);
+      setSatelliteData(null);
+    } finally {
+      setSatelliteLoading(false);
+    }
+  };
+
+  const getNdviInterpretation = (ndvi: number) => {
+    if (ndvi < 0) return t('Very low / non-vegetated signal');
+    if (ndvi < 0.2) return t('Low vegetation signal');
+    if (ndvi < 0.5) return t('Moderate vegetation signal');
+    if (ndvi < 0.7) return t('Healthy vegetation signal');
+    return t('High vegetation density');
+  };
+
+  const getWmoWeatherString = (code: number) => {
+    if (code === 0) return '☀️ Clear';
+    if (code === 1 || code === 2 || code === 3) return '⛅ Cloudy';
+    if (code === 45 || code === 48) return '🌫️ Fog';
+    if (code >= 51 && code <= 55) return '🌧️ Drizzle';
+    if (code >= 61 && code <= 65) return '🌧️ Rain';
+    if (code >= 71 && code <= 77) return '❄️ Snow';
+    if (code >= 80 && code <= 82) return '🌧️ Showers';
+    if (code >= 95 && code <= 99) return '⛈️ Thunderstorm';
+    return '☁️';
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setWeatherError(t('Geolocation is not supported by your browser'));
+      return;
+    }
+    setWeatherLoading(true);
+    setWeatherError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=Current+Location&count=1`);
+          await fetchWeather(latitude, longitude, "Current Location (GPS)");
+        } catch (e) {
+          await fetchWeather(latitude, longitude, "Current Location (GPS)");
+        }
+        fetchSatelliteData(latitude, longitude);
+      },
+      (error) => {
+        setWeatherError(t('Failed to get location'));
+        setWeatherLoading(false);
+      }
+    );
+  };
+
+  const handleSearchLocation = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!locationQuery.trim()) return;
+    setWeatherLoading(true);
+    setWeatherError(null);
+    try {
+      const { success, data, error } = await safeFetchJson(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationQuery)}&count=1`,
+        undefined,
+        t('Location search is currently unavailable. Please try again later.'),
+        t('Unable to connect to the service. Please check your internet connection and try again.')
+      );
+      if (!success) {
+        throw new Error(error);
+      }
+      if (!data.results || data.results.length === 0) {
+        throw new Error(t('Location not found'));
+      }
+      const { latitude, longitude, name, admin1, country } = data.results[0];
+      const fullName = [name, admin1, country].filter(Boolean).join(", ");
+      await fetchWeather(latitude, longitude, fullName);
+      fetchSatelliteData(latitude, longitude);
+    } catch (e) {
+      setWeatherError((e as Error).message);
+      setWeatherLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadDataset = async () => {
@@ -229,7 +386,52 @@ export const PredictCrop: React.FC = () => {
         'Primary Recommendation',
         'Secondary Match',
         'Tertiary Alternative',
-        'Rice', 'Wheat', 'Cotton', 'Optimal Match', 'High Viability', 'Strong Potential'
+        'Rice', 'Wheat', 'Cotton', 'Optimal Match', 'High Viability', 'Strong Potential',
+        'Location & Weather Auto-fill',
+        'Enter your location to automatically fetch current temperature, humidity, and precipitation. You must still provide soil N, P, K, and pH values manually.',
+        'Enter city or village name...',
+        'Search',
+        'Use My Location',
+        'Fetching weather data...',
+        'Location',
+        'Temperature',
+        'Humidity',
+        'Current Precipitation',
+        'Failed to fetch weather data',
+        'Geolocation is not supported by your browser',
+        'Failed to get location',
+        'Location not found',
+        'Failed to search location',
+        'Satellite Vegetation Insight',
+        'NDVI',
+        'Vegetation signal',
+        'Latest cloud-free observation',
+        'Cloud cover',
+        'Observed',
+        'Source',
+        'Satellite data unavailable',
+        'No recent cloud-free observation available',
+        'Very low / non-vegetated signal',
+        'Low vegetation signal',
+        'Moderate vegetation signal',
+        'Healthy vegetation signal',
+        'High vegetation density',
+        'Get AI Advisory',
+        'Preparing your agricultural advisory...',
+        'AI Agricultural Advisory',
+        'Summary',
+        'Why this crop?',
+        'Weather advice',
+        'Soil advice',
+        'Satellite insight',
+        'Sustainable practices',
+        'Next steps',
+        'Important considerations',
+        'Weather data is currently unavailable. Please try again later.',
+        'Satellite data is currently unavailable. Please try again later.',
+        'AI advisory is temporarily unavailable. Please try again later.',
+        'Unable to connect to the service. Please check your internet connection and try again.',
+        'Location search is currently unavailable. Please try again later.'
       ]);
     }
   }, [language, translateBatch]);
@@ -311,6 +513,152 @@ export const PredictCrop: React.FC = () => {
             <p className="font-headline font-bold text-red-600 dark:text-red-400 self-center">{errorMsg}</p>
           </div>
         )}
+
+        {/* Weather Integration Section */}
+        <div className="mb-12 bg-surface-container-lowest p-6 rounded-xl border border-on-surface/10 shadow-sm">
+          <h2 className="font-headline font-bold text-lg mb-4 text-primary">{t('Location & Weather Auto-fill')}</h2>
+          <p className="text-sm text-on-surface-variant mb-6">{t('Enter your location to automatically fetch current temperature, humidity, and precipitation. You must still provide soil N, P, K, and pH values manually.')}</p>
+          
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1 flex gap-2">
+              <input 
+                type="text" 
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchLocation(e)}
+                placeholder={t('Enter city or village name...')}
+                className="flex-1 bg-surface-container border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary transition-all"
+              />
+              <button 
+                type="button"
+                onClick={handleSearchLocation}
+                disabled={weatherLoading}
+                className="bg-primary text-on-primary px-6 rounded-lg font-bold disabled:opacity-50 transition-all hover:bg-primary/90"
+              >
+                {t('Search')}
+              </button>
+            </div>
+            <div className="flex items-center justify-center">
+              <span className="text-on-surface-variant text-sm font-bold mx-2">OR</span>
+            </div>
+            <button 
+              type="button"
+              onClick={handleGetLocation}
+              disabled={weatherLoading}
+              className="bg-surface-container-highest text-on-surface px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:bg-surface-container-highest/80"
+            >
+              <MapPin className="w-4 h-4" /> {t('Use My Location')}
+            </button>
+          </div>
+
+          {weatherLoading && (
+            <div className="flex items-center gap-2 text-primary font-bold text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" /> {t('Fetching weather data...')}
+            </div>
+          )}
+          
+          {weatherError && (
+             <div className="text-red-500 text-sm font-bold bg-red-500/10 p-3 rounded-lg">{weatherError}</div>
+          )}
+
+          {weatherData && (
+            <div className="mt-6 bg-surface-container p-5 rounded-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+              <div>
+                <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">📍 {t('Location')}</p>
+                <p className="font-headline font-bold text-lg">{weatherData.name}</p>
+              </div>
+              <div className="flex flex-wrap gap-6 md:gap-10">
+                <div>
+                  <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">🌡️ {t('Temperature')}</p>
+                  <p className="font-headline font-bold text-lg">{weatherData.temp}°C</p>
+                </div>
+                <div>
+                  <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">💧 {t('Humidity')}</p>
+                  <p className="font-headline font-bold text-lg">{weatherData.humidity}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">🌧️ {t('Current Precipitation')}</p>
+                  <p className="font-headline font-bold text-lg text-primary">{weatherData.precip} mm</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {weatherForecast && weatherForecast.length > 0 && (
+            <div className="mt-4 bg-surface-container p-5 rounded-lg border border-primary/10 shadow-sm">
+              <h3 className="font-headline font-bold text-md text-primary mb-4">{t('7-Day Weather Outlook')}</h3>
+              <div className="flex flex-row overflow-x-auto gap-4 pb-2 snap-x">
+                {weatherForecast.map((day, idx) => {
+                  const dateObj = new Date(day.date);
+                  const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'short' });
+                  return (
+                    <div key={idx} className="flex-shrink-0 bg-surface-container-lowest border border-on-surface/5 p-3 rounded-lg min-w-[120px] snap-center shadow-sm text-center">
+                      <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-1">{dayName}</p>
+                      <p className="text-xl mb-1">{getWmoWeatherString(day.weather_code).split(' ')[0]}</p>
+                      <p className="text-sm font-bold text-on-surface">{day.temperature_max}° <span className="text-on-surface-variant text-xs">{day.temperature_min}°</span></p>
+                      <p className="text-[10px] text-primary font-bold mt-1 tracking-wide">{t('Rain')} {day.precipitation_probability}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Satellite Integration Section */}
+          {(satelliteLoading || satelliteData || satelliteError) && (
+            <div className="mt-4 bg-surface-container p-5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="bg-primary/20 p-1.5 rounded text-primary">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h3 className="font-headline font-bold text-md text-primary">{t('Satellite Vegetation Insight')}</h3>
+              </div>
+
+              {satelliteLoading && (
+                <div className="flex items-center gap-2 text-primary font-bold text-sm py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> {t('Fetching satellite data...')}
+                </div>
+              )}
+
+              {satelliteError && !satelliteLoading && (
+                <div className="text-on-surface-variant text-sm font-medium italic py-2">
+                  {t('Satellite data unavailable')}: {satelliteError}
+                </div>
+              )}
+
+              {satelliteData && !satelliteLoading && (
+                <div className="flex flex-col md:flex-row gap-6 md:gap-10 justify-between items-start md:items-center">
+                  <div>
+                    <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">{t('NDVI')}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-headline font-black text-2xl text-primary">{satelliteData.ndvi.toFixed(2)}</p>
+                      <span className="text-xs font-bold px-2 py-1 bg-surface-container-high rounded text-on-surface">
+                        {getNdviInterpretation(satelliteData.ndvi)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-6 md:gap-10">
+                    <div>
+                      <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">🗓️ {t('Observed')}</p>
+                      <p className="font-headline font-bold text-sm">
+                        {new Date(satelliteData.date_acquired).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">☁️ {t('Cloud cover')}</p>
+                      <p className="font-headline font-bold text-sm">{satelliteData.cloud_cover.toFixed(1)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-on-surface-variant font-bold mb-1 tracking-wider uppercase">📡 {t('Source')}</p>
+                      <p className="font-headline font-bold text-sm text-primary">{satelliteData.source}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           <div className="flex flex-col gap-2">
             <label className="font-headline font-bold text-sm tracking-wide text-primary uppercase">{t('Nitrogen (N)')}</label>
@@ -398,7 +746,9 @@ export const PredictCrop: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2 md:col-span-2 lg:col-span-1">
-            <label className="font-headline font-bold text-sm tracking-wide text-primary uppercase">{t('Rainfall')}</label>
+            <label className="font-headline font-bold text-sm tracking-wide text-primary uppercase">
+              {t('Rainfall')} <span className="text-on-surface-variant font-normal text-xs normal-case ml-1">({t('Annual average')})</span>
+            </label>
             <input 
               name="rainfall"
               value={isNaN(formData.rainfall) ? '' : formData.rainfall}
@@ -449,6 +799,140 @@ export const PredictCrop: React.FC = () => {
               />
             ))}
           </div>
+        </section>
+      )}
+
+      {recommendations && (
+        <section className="mt-16 flex flex-col items-center">
+          {!aiAdvisory && !aiAdvisoryLoading && (
+            <button
+              onClick={async () => {
+                setAiAdvisoryLoading(true);
+                setAiAdvisoryError(null);
+                try {
+                  const payload = {
+                    language: language,
+                    location: { region: locationQuery || "Unknown" },
+                    soil: { N: formData.n, P: formData.p, K: formData.k, pH: formData.ph },
+                    environment: { temperature: formData.temp, humidity: formData.humidity, rainfall_annual: formData.rainfall },
+                    weather_current: weatherData ? { temperature: weatherData.temp, precipitation: weatherData.precip } : {},
+                    weather_forecast: weatherForecast ? { 
+                      status: "AVAILABLE", 
+                      summary: weatherForecastSummary, 
+                      risk_signals: weatherRiskSignals 
+                    } : { status: "UNAVAILABLE" },
+                    satellite: satelliteData ? { status: "AVAILABLE", ndvi: satelliteData.ndvi, days_since: satelliteData.days_since, cloud_cover: satelliteData.cloud_cover } : { status: "UNAVAILABLE" },
+                    prediction: {
+                      primary_crop: recommendations[0]?.label,
+                      top3: recommendations.map(r => ({ crop: r.label, prob: r.confidence })),
+                      familiarity: "high", // simplified for frontend state
+                      prediction_status: "high_confidence" // simplified for frontend state
+                    }
+                  };
+                  const { success, data, error } = await safeFetchJson('/api/agri-advisory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  }, t('AI advisory is temporarily unavailable. Please try again later.'), t('Unable to connect to the service. Please check your internet connection and try again.'));
+                  if (!success) throw new Error(error);
+                  setAiAdvisory(data.advisory);
+                } catch (e) {
+                  setAiAdvisoryError((e as Error).message);
+                } finally {
+                  setAiAdvisoryLoading(false);
+                }
+              }}
+              className="bg-primary text-on-primary px-8 py-4 rounded-full font-headline font-extrabold uppercase tracking-tight transition-all active:scale-95 hover:bg-primary/90 flex items-center gap-2"
+            >
+              <Sprout className="w-5 h-5" />
+              {t("Get AI Advisory")}
+            </button>
+          )}
+
+          {aiAdvisoryLoading && (
+            <div className="flex flex-col items-center gap-4 text-on-surface-variant">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="font-body text-sm">{t("Preparing your agricultural advisory...")}</p>
+            </div>
+          )}
+
+          {aiAdvisoryError && (
+            <div className="mt-4 p-4 bg-error/10 text-error rounded-xl max-w-2xl text-center font-body text-sm">
+              {aiAdvisoryError}
+            </div>
+          )}
+
+          {aiAdvisory && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 bg-surface-container-lowest border border-primary/20 rounded-3xl p-6 md:p-10 max-w-4xl w-full text-left"
+            >
+              <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-6 flex items-center gap-3">
+                <Sprout className="w-8 h-8" />
+                {t("AI Agricultural Advisory")}
+              </h3>
+              
+              <div className="space-y-6">
+                <div className="bg-primary/5 p-4 rounded-2xl">
+                  <h4 className="font-headline font-bold text-lg mb-2 text-primary">{t("Summary")}</h4>
+                  <p className="font-body text-on-surface-variant leading-relaxed">{aiAdvisory.summary}</p>
+                </div>
+
+                <div>
+                  <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Why this crop?")}</h4>
+                  <p className="font-body text-on-surface-variant leading-relaxed">{aiAdvisory.crop_explanation}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Weather advice")}</h4>
+                    <p className="font-body text-on-surface-variant leading-relaxed">{aiAdvisory.weather_advice}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Soil advice")}</h4>
+                    <p className="font-body text-on-surface-variant leading-relaxed">{aiAdvisory.soil_advice}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Satellite insight")}</h4>
+                  <p className="font-body text-on-surface-variant leading-relaxed">{aiAdvisory.satellite_insight}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-surface-container p-4 rounded-2xl">
+                    <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Sustainable practices")}</h4>
+                    <ul className="list-disc pl-5 font-body text-on-surface-variant space-y-1">
+                      {aiAdvisory.sustainable_practices?.map((practice: string, i: number) => (
+                        <li key={i}>{practice}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-surface-container p-4 rounded-2xl">
+                    <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Next steps")}</h4>
+                    <ul className="list-disc pl-5 font-body text-on-surface-variant space-y-1">
+                      {aiAdvisory.next_steps?.map((step: string, i: number) => (
+                        <li key={i}>{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {aiAdvisory.cautions && aiAdvisory.cautions.length > 0 && (
+                  <div className="bg-error/10 border border-error/20 p-4 rounded-2xl">
+                    <h4 className="font-headline font-bold text-lg mb-2 text-error">{t("Important considerations")}</h4>
+                    <ul className="list-disc pl-5 font-body text-error space-y-1">
+                      {aiAdvisory.cautions.map((caution: string, i: number) => (
+                        <li key={i}>{caution}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
         </section>
       )}
     </motion.div>
