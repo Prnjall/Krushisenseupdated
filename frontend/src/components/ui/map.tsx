@@ -62,11 +62,12 @@ interface MapMarkerProps {
   longitude: number;
   latitude: number;
   children?: React.ReactNode;
+  icon?: L.DivIcon | L.Icon;
 }
 
-export const MapMarker: React.FC<MapMarkerProps> = ({ longitude, latitude, children }) => {
+export const MapMarker: React.FC<MapMarkerProps> = ({ longitude, latitude, children, icon }) => {
   return (
-    <Marker position={[latitude, longitude]}>
+    <Marker position={[latitude, longitude]} icon={icon || defaultIcon}>
       {children}
     </Marker>
   );
