@@ -165,6 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) =
           colors={staggeredMenuColors}
           items={staggeredMenuItems}
           displaySocials={false}
+          displayItemNumbering={false}
           logoUrl="" // Do not show ReactBits logo
           menuButtonColor={staggeredMenuBtnColor}
           openMenuButtonColor="#000000" // Always dark because menu panel is white
@@ -173,26 +174,26 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage }) =
           onMenuClose={() => setIsMobileMenuOpen(false)}
         >
           {/* Mobile Theme and Language Controls */}
-          <div className="flex flex-col gap-4 mt-2">
-            <div className="flex items-center justify-between">
-              <span className="font-headline font-bold text-on-surface uppercase tracking-tight text-lg">Theme</span>
+          <div className="flex flex-col gap-6 mt-4 w-full max-w-sm mx-auto sm:mx-0">
+            <div className="flex items-center justify-between bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
+              <span className="font-headline font-bold text-on-surface uppercase tracking-tight text-base sm:text-lg">Theme</span>
               <button
                 onClick={toggleTheme}
-                className={`p-3 rounded-full transition-colors bg-surface-container-low hover:bg-surface-container-high text-on-surface`}
+                className={`p-3 rounded-full transition-colors bg-surface-container-highest hover:bg-surface-container shadow-sm text-on-surface active:scale-95`}
                 aria-label="Toggle theme"
               >
                 {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
               </button>
             </div>
             
-            <div className="flex flex-col gap-2">
-              <span className="font-headline font-bold text-on-surface uppercase tracking-tight text-lg">Language</span>
-              <div className="flex flex-col gap-2 bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+            <div className="flex flex-col gap-3 bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
+              <span className="font-headline font-bold text-on-surface uppercase tracking-tight text-base sm:text-lg mb-1">Language</span>
+              <div className="flex flex-col gap-1 overflow-hidden">
                 {languages.map((lang) => (
                   <button
                     key={lang.code}
-                    className={`w-full text-left px-4 py-3 font-headline font-bold text-base transition-colors ${
-                      language === lang.code ? 'bg-primary text-on-primary' : 'hover:bg-surface-container-low text-on-surface'
+                    className={`w-full text-left px-5 py-3.5 font-headline font-bold text-sm sm:text-base transition-all rounded-lg ${
+                      language === lang.code ? 'bg-primary text-on-primary shadow-md translate-x-1' : 'bg-surface-container-lowest hover:bg-surface-container-high text-on-surface hover:translate-x-1 border border-outline-variant/20'
                     } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                     onClick={() => {
                       if (!loading) {
