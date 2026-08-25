@@ -3,6 +3,18 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+
+// Fix for broken default Leaflet marker icons in Vite/Webpack
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: iconRetina,
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+});
+
 // Custom SVG icon for a minimal aesthetic
 const createCustomIcon = (color = '#000000') => {
   return L.divIcon({
@@ -67,7 +79,7 @@ interface MapMarkerProps {
 
 export const MapMarker: React.FC<MapMarkerProps> = ({ longitude, latitude, children, icon }) => {
   return (
-    <Marker position={[latitude, longitude]} icon={icon || defaultIcon}>
+    <Marker position={[latitude, longitude]} {...(icon ? { icon } : {})}>
       {children}
     </Marker>
   );
