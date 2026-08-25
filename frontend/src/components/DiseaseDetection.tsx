@@ -28,7 +28,11 @@ export const DiseaseDetection: React.FC = () => {
   const [aiAdvisoryLoading, setAiAdvisoryLoading] = useState(false);
   const [aiAdvisoryError, setAiAdvisoryError] = useState<string | null>(null);
   
+  const [showMobileUploadMenu, setShowMobileUploadMenu] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (language !== 'en') {
@@ -50,7 +54,11 @@ export const DiseaseDetection: React.FC = () => {
         'An error occurred during upload. Please try again.',
         'An error occurred during analysis. Please try again.',
         'AI disease advisory is temporarily unavailable.',
-        'Apple', 'Maize', 'Grapes', 'Rice'
+        'Apple', 'Maize', 'Grapes', 'Rice',
+        'Add Crop Image',
+        'Take Photo',
+        'Choose from Gallery',
+        'Cancel'
       ]);
     }
   }, [language, translateBatch]);
@@ -76,6 +84,15 @@ export const DiseaseDetection: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       validateAndSetFile(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    // Check if device is mobile width (less than 768px for standard tailwind md breakpoint)
+    if (window.innerWidth < 768) {
+      setShowMobileUploadMenu(true);
+    } else {
+      fileInputRef.current?.click();
     }
   };
 
@@ -225,11 +242,12 @@ export const DiseaseDetection: React.FC = () => {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-4xl mx-auto px-4 sm:px-6 py-24 min-h-screen"
-    >
+    <>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl mx-auto px-4 sm:px-6 py-24 min-h-screen"
+      >
       <header className="mb-12 text-center">
         <h1 className="font-headline font-black text-3xl sm:text-5xl md:text-6xl tracking-tighter mb-4 text-primary">
           {t('AI-Assisted Disease Screening')}
@@ -289,9 +307,25 @@ export const DiseaseDetection: React.FC = () => {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 accept="image/jpeg,image/png,image/webp"
-                capture="environment"
                 className="hidden"
                 id="disease-image-upload"
+              />
+              <input
+                type="file"
+                ref={cameraInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                id="disease-image-upload-camera"
+              />
+              <input
+                type="file"
+                ref={galleryInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+                id="disease-image-upload-gallery"
               />
 
               {!previewUrl ? (
@@ -309,7 +343,7 @@ export const DiseaseDetection: React.FC = () => {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={handleUploadClick}
                       className="bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity active:scale-95"
                     >
                       {t('Upload a leaf image')}
@@ -461,6 +495,66 @@ export const DiseaseDetection: React.FC = () => {
         )}
       </AnimatePresence>
     </motion.div>
+      <AnimatePresence>
+        {showMobileUploadMenu && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[5000] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowMobileUploadMenu(false)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm bg-surface-container-lowest rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 text-center border-b border-outline-variant/20">
+                <h3 className="font-headline font-bold text-xl text-on-surface">
+                  {t('Add Crop Image')}
+                </h3>
+              </div>
+              
+              <div className="flex flex-col p-4 gap-3">
+                <button
+                  onClick={() => {
+                    setShowMobileUploadMenu(false);
+                    cameraInputRef.current?.click();
+                  }}
+                  className="flex items-center justify-center gap-3 w-full bg-primary text-on-primary py-4 rounded-2xl font-bold font-headline shadow-md active:scale-95 transition-transform"
+                >
+                  <Camera className="w-5 h-5" />
+                  {t('Take Photo')}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowMobileUploadMenu(false);
+                    galleryInputRef.current?.click();
+                  }}
+                  className="flex items-center justify-center gap-3 w-full bg-surface-container text-on-surface py-4 rounded-2xl font-bold font-headline border border-outline-variant/30 active:scale-95 transition-transform"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                  {t('Choose from Gallery')}
+                </button>
+              </div>
+              
+              <div className="p-4 pt-0">
+                <button
+                  onClick={() => setShowMobileUploadMenu(false)}
+                  className="w-full py-4 text-on-surface-variant font-bold font-headline active:opacity-70 transition-opacity"
+                >
+                  {t('Cancel')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
