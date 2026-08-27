@@ -541,6 +541,10 @@ def agri_advisory_view(request):
         if language not in ["en", "hi", "mr"]:
             return JsonResponse({"success": False, "error": "Unsupported language"}, status=400)
 
+        # Map language code to full name for unambiguous Gemini instruction
+        language_names = {"en": "English", "hi": "Hindi (हिन्दी)", "mr": "Marathi (मराठी)"}
+        language_full = language_names.get(language, "English")
+
         location = data.get("location", {})
         soil = data.get("soil", {})
         env = data.get("environment", {})
@@ -594,7 +598,8 @@ AGRICULTURAL WEATHER RISK SIGNALS:
 
     # Prepare text representation for Gemini
     prompt_text = f"""
-Language requested: {language}
+OUTPUT LANGUAGE: {language_full} — ALL advisory string values must be in {language_full}.
+Language code: {language}
 Location: {location.get("region", "Unknown")}
 
 SOIL DATA:
@@ -638,19 +643,44 @@ Familiarity/Confidence Status: {prediction.get("prediction_status")}
     else:
         prompt_text += f"{forecast_str}"
 
-    system_instruction = """You are an agricultural advisory assistant for KrushiSense.
+    # Final mandatory language override — appended LAST so Gemini sees it immediately before generating
+    prompt_text += f"""
+
+=== FINAL MANDATORY OUTPUT LANGUAGE REMINDER ===
+You MUST write ALL advisory text values in {language_full}.
+Do NOT write any advisory sentence or bullet point in English if the requested language is not English.
+The JSON keys remain in English. Only the string VALUES must be in {language_full}.
+If you are generating in Hindi or Marathi, use natural colloquial farmer-friendly language, not a word-for-word literal translation.
+Do not invent or alter any numbers, units, or measurements.
+=== END ==="""
+
+    system_instruction = f"""=== MANDATORY OUTPUT LANGUAGE: {language_full} ===
+EVERY human-readable string value in the JSON response MUST be written in {language_full}.
+This is a non-negotiable hard requirement. Do NOT generate any advisory text in English if the language is not English.
+The JSON keys (summary, crop_explanation, weather_advice, etc.) must remain in English for API compatibility.
+Only the string VALUES must be in {language_full}.
+The field descriptions in the schema are structural guides only — they do NOT define the output language.
+=== END OF LANGUAGE REQUIREMENT ===
+
+You are an agricultural advisory assistant for KrushiSense.
 Your job is to provide practical, localized, cautious and evidence-grounded agricultural guidance.
 You are NOT the crop prediction model. The supplied ML recommendation is an input signal that you must explain, not blindly override.
 Use ONLY the structured information supplied in the request and general agricultural knowledge appropriate for the identified crop and region.
 Never invent missing measurements, weather conditions, NDVI, crop probabilities, or satellite observations.
 Never claim that NDVI alone proves crop health or that a recommendation guarantees yield.
 Clearly distinguish observed data from general agricultural guidance.
-When data is unavailable, explicitly say it is unavailable.
-Give practical recommendations in simple farmer-friendly language.
+When data is unavailable, explicitly say it is unavailable in {language_full}.
+Give practical recommendations in simple farmer-friendly language appropriate for {language_full}-speaking farmers.
 Prefer sustainable and regenerative agricultural practices (crop rotation, residue/mulch management, soil organic matter, water conservation, integrated nutrient/pest management, cover crops) where appropriate for the given crop and soil conditions.
 Do not provide dangerous or unsupported pesticide dosage instructions.
-If confidence/familiarity is low or insufficient, clearly communicate that limitation.
-Return ONLY the required structured JSON response. Ensure the VALUES of the JSON response are written in the requested language."""
+If confidence/familiarity is low or insufficient, clearly communicate that limitation in {language_full}.
+
+NUMERIC DATA PRESERVATION RULES (apply regardless of language):
+- Preserve all numerical values exactly as provided: N, P, K, pH, temperature, humidity, rainfall, precipitation, NDVI, confidence percentages, dates, units.
+- Do not alter, invent, round, or omit any numeric measurement.
+- Units (C, mm, %, kg/ha) must be preserved as-is.
+
+Return ONLY the required structured JSON response with all string values in {language_full}."""
 
     try:
         client = genai.Client(api_key=api_key)
@@ -904,6 +934,10 @@ def disease_advisory_view(request):
         if language not in ["en", "hi", "mr"]:
             return JsonResponse({"success": False, "error": "Unsupported language"}, status=400)
 
+        # Map language code to full name for unambiguous Gemini instruction
+        language_names = {"en": "English", "hi": "Hindi (हिन्दी)", "mr": "Marathi (मराठी)"}
+        language_full = language_names.get(language, "English")
+
         crop = data.get("crop")
         if not crop:
             return JsonResponse({"success": False, "error": "Missing crop"}, status=400)
@@ -967,7 +1001,8 @@ AGRICULTURAL WEATHER RISK SIGNALS:
 
     # Prepare text representation for Gemini
     prompt_text = f"""
-Language requested: {language}
+OUTPUT LANGUAGE: {language_full} — ALL advisory string values must be in {language_full}.
+Language code: {language}
 Crop: {crop}
 Location: {location.get("region", "Unknown")}
 
@@ -1005,14 +1040,33 @@ Status: {satellite.get("status", "UNAVAILABLE")}
     else:
         prompt_text += f"{forecast_str}"
 
-    system_instruction = """You are an agricultural advisory assistant helping farmers interpret an AI-assisted crop disease screening result for KrushiSense.
+    # Final mandatory language override — appended LAST so Gemini sees it immediately before generating
+    prompt_text += f"""
+
+=== FINAL MANDATORY OUTPUT LANGUAGE REMINDER ===
+You MUST write ALL advisory text values in {language_full}.
+Do NOT write any advisory sentence or bullet point in English if the requested language is not English.
+The JSON keys remain in English. Only the string VALUES must be in {language_full}.
+If you are generating in Hindi or Marathi, use natural colloquial farmer-friendly language, not a word-for-word literal translation.
+Do not invent or alter any numbers, units, or measurements.
+=== END ==="""
+
+    system_instruction = f"""=== MANDATORY OUTPUT LANGUAGE: {language_full} ===
+EVERY human-readable string value in the JSON response MUST be written in {language_full}.
+This is a non-negotiable hard requirement. Do NOT generate any advisory text in English if the language is not English.
+The JSON keys (summary, what_it_means, symptoms, etc.) must remain in English for API compatibility.
+Only the string VALUES must be in {language_full}.
+The field descriptions in the schema are structural guides only — they do NOT define the output language.
+=== END OF LANGUAGE REQUIREMENT ===
+
+You are an agricultural advisory assistant helping farmers interpret an AI-assisted crop disease screening result for KrushiSense.
 
 The disease classification has already been performed by a dedicated machine-learning model (CNN).
 You MUST NOT independently diagnose a different disease or guess a disease based on weather/NDVI.
-Use ONLY the provided verified diagnosis. Explain the result in simple, practical, farmer-friendly language.
+Use ONLY the provided verified diagnosis. Explain the result in simple, practical, farmer-friendly language appropriate for {language_full}-speaking farmers.
 
 If the screening status is HEALTHY:
-- Do not claim the crop is "guaranteed" to be disease-free. 
+- Do not claim the crop is "guaranteed" to be disease-free.
 - Use wording such as: "No common target disease was detected by the AI screening model."
 - Focus on monitoring, crop hygiene, scouting, and sustainable preventive practices.
 
@@ -1024,8 +1078,14 @@ If the screening status is DISEASE_DETECTED:
 - Do not invent missing information. Clearly communicate uncertainty. This is an AI-assisted screening tool, not a definitive diagnosis.
 
 Prefer sustainable and regenerative agricultural practices where appropriate.
-If weather or satellite information is unavailable, explicitly state that it is unavailable rather than guessing.
-Do not return arbitrary markdown or HTML. Return ONLY the strictly structured JSON response. Ensure the VALUES of the JSON response are written in the requested language."""
+If weather or satellite information is unavailable, explicitly state that it is unavailable in {language_full} rather than guessing.
+
+NUMERIC DATA PRESERVATION RULES (apply regardless of language):
+- Preserve all numerical values exactly as provided: confidence percentages, temperature, precipitation, NDVI, dates, units.
+- Do not alter, invent, round, or omit any numeric measurement.
+- Units (C, mm, %) must be preserved as-is.
+
+Return ONLY the strictly structured JSON response with all string values in {language_full}."""
 
     try:
         client = genai.Client(api_key=api_key)

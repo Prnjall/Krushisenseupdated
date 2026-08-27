@@ -186,6 +186,10 @@ export const PredictCrop: React.FC = () => {
   const [aiAdvisoryLoading, setAiAdvisoryLoading] = useState(false);
   const [aiAdvisoryError, setAiAdvisoryError] = useState<string | null>(null);
   const [aiAdvisory, setAiAdvisory] = useState<any>(null);
+  
+  const advisoryAbortController = useRef<AbortController | null>(null);
+
+
 
   const fetchWeather = async (lat: number, lon: number, name: string) => {
     setWeatherLoading(true);
@@ -245,6 +249,56 @@ export const PredictCrop: React.FC = () => {
       setSatelliteData(null);
     } finally {
       setSatelliteLoading(false);
+    }
+  };
+
+  const fetchAdvisory = async (signal?: AbortSignal) => {
+    if (!recommendations) return;
+    setAiAdvisoryLoading(true);
+    setAiAdvisoryError(null);
+    try {
+      const payload = {
+        language: language,
+        location: { region: locationQuery || "Unknown" },
+        soil: { N: formData.n, P: formData.p, K: formData.k, pH: formData.ph },
+        environment: { temperature: formData.temp, humidity: formData.humidity, rainfall_annual: formData.rainfall },
+        weather_current: weatherData ? { temperature: weatherData.temp, precipitation: weatherData.precip } : {},
+        weather_forecast: weatherForecast ? { 
+          status: "AVAILABLE", 
+          summary: weatherForecastSummary, 
+          risk_signals: weatherRiskSignals 
+        } : { status: "UNAVAILABLE" },
+        satellite: satelliteData ? { status: "AVAILABLE", ndvi: satelliteData.ndvi, days_since: satelliteData.days_since, cloud_cover: satelliteData.cloud_cover } : { status: "UNAVAILABLE" },
+        prediction: {
+          primary_crop: recommendations[0]?.label,
+          top3: recommendations.map(r => ({ crop: r.label, prob: r.confidence })),
+          familiarity: "high", // simplified for frontend state
+          prediction_status: "high_confidence" // simplified for frontend state
+        }
+      };
+      const { success, data, error, errorType } = await safeFetchJson('/api/agri-advisory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: signal,
+      }, t('AI advisory is temporarily unavailable. Please try again later.'), t('Unable to connect to the service. Please check your internet connection and try again.'));
+      
+      if (!success) {
+        if (errorType === 'ABORT_ERROR') return;
+        if (errorType === 'AI_UNAVAILABLE' || errorType === 'RESOURCE_EXHAUSTED' || error === 'AI advisory is temporarily unavailable.') {
+          throw new Error(t('AI advisory is temporarily unavailable. Please try again later.'));
+        }
+        throw new Error(error);
+      }
+      setAiAdvisory(data.advisory);
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') {
+        setAiAdvisoryError((e as Error).message);
+      }
+    } finally {
+      if (!signal?.aborted) {
+        setAiAdvisoryLoading(false);
+      }
     }
   };
 
@@ -431,7 +485,8 @@ export const PredictCrop: React.FC = () => {
         'Satellite data is currently unavailable. Please try again later.',
         'AI advisory is temporarily unavailable. Please try again later.',
         'Unable to connect to the service. Please check your internet connection and try again.',
-        'Location search is currently unavailable. Please try again later.'
+        'Location search is currently unavailable. Please try again later.',
+        'Updating advice...'
       ]);
     }
   }, [language, translateBatch]);
@@ -806,42 +861,7 @@ export const PredictCrop: React.FC = () => {
         <section className="mt-16 flex flex-col items-center">
           {!aiAdvisory && !aiAdvisoryLoading && (
             <button
-              onClick={async () => {
-                setAiAdvisoryLoading(true);
-                setAiAdvisoryError(null);
-                try {
-                  const payload = {
-                    language: language,
-                    location: { region: locationQuery || "Unknown" },
-                    soil: { N: formData.n, P: formData.p, K: formData.k, pH: formData.ph },
-                    environment: { temperature: formData.temp, humidity: formData.humidity, rainfall_annual: formData.rainfall },
-                    weather_current: weatherData ? { temperature: weatherData.temp, precipitation: weatherData.precip } : {},
-                    weather_forecast: weatherForecast ? { 
-                      status: "AVAILABLE", 
-                      summary: weatherForecastSummary, 
-                      risk_signals: weatherRiskSignals 
-                    } : { status: "UNAVAILABLE" },
-                    satellite: satelliteData ? { status: "AVAILABLE", ndvi: satelliteData.ndvi, days_since: satelliteData.days_since, cloud_cover: satelliteData.cloud_cover } : { status: "UNAVAILABLE" },
-                    prediction: {
-                      primary_crop: recommendations[0]?.label,
-                      top3: recommendations.map(r => ({ crop: r.label, prob: r.confidence })),
-                      familiarity: "high", // simplified for frontend state
-                      prediction_status: "high_confidence" // simplified for frontend state
-                    }
-                  };
-                  const { success, data, error } = await safeFetchJson('/api/agri-advisory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                  }, t('AI advisory is temporarily unavailable. Please try again later.'), t('Unable to connect to the service. Please check your internet connection and try again.'));
-                  if (!success) throw new Error(error);
-                  setAiAdvisory(data.advisory);
-                } catch (e) {
-                  setAiAdvisoryError((e as Error).message);
-                } finally {
-                  setAiAdvisoryLoading(false);
-                }
-              }}
+              onClick={() => fetchAdvisory()}
               className="bg-primary text-on-primary px-8 py-4 rounded-full font-headline font-extrabold uppercase tracking-tight transition-all active:scale-95 hover:bg-primary/90 flex items-center gap-2"
             >
               <Sprout className="w-5 h-5" />
@@ -852,7 +872,7 @@ export const PredictCrop: React.FC = () => {
           {aiAdvisoryLoading && (
             <div className="flex flex-col items-center gap-4 text-on-surface-variant">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="font-body text-sm">{t("Preparing your agricultural advisory...")}</p>
+              <p className="font-body text-sm">{aiAdvisory ? t("Updating advice...") : t("Preparing your agricultural advisory...")}</p>
             </div>
           )}
 

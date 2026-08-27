@@ -28,6 +28,10 @@ export const DiseaseDetection: React.FC = () => {
   const [aiAdvisoryLoading, setAiAdvisoryLoading] = useState(false);
   const [aiAdvisoryError, setAiAdvisoryError] = useState<string | null>(null);
   
+  const advisoryAbortController = useRef<AbortController | null>(null);
+  
+
+  
   const [showMobileUploadMenu, setShowMobileUploadMenu] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +62,13 @@ export const DiseaseDetection: React.FC = () => {
         'Add Crop Image',
         'Take Photo',
         'Choose from Gallery',
-        'Cancel'
+        'Cancel',
+        'Healthy',
+        'Apple Scab', 'Apple Black Rot',
+        'Maize Cercospora Leaf Spot', 'Maize Common Rust', 'Maize Northern Leaf Blight',
+        'Grape Black Rot', 'Grape Esca', 'Grape Leaf Blight',
+        'Rice Bacterial Leaf Blight', 'Rice Brown Spot', 'Rice Leaf Smut',
+        'Updating advice...'
       ]);
     }
   }, [language, translateBatch]);
@@ -199,7 +209,7 @@ export const DiseaseDetection: React.FC = () => {
     }
   };
 
-  const handleGetAdvisory = async () => {
+  const handleGetAdvisory = async (signal?: AbortSignal) => {
     if (!result || !selectedCrop) return;
     
     setAiAdvisoryLoading(true);
@@ -221,23 +231,35 @@ export const DiseaseDetection: React.FC = () => {
         satellite: { status: "UNAVAILABLE" }
       };
 
-      const { success, data, error } = await safeFetchJson('/api/disease-advisory', {
+      const { success, data, error, errorType } = await safeFetchJson('/api/disease-advisory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: signal
       }, t('AI disease advisory is temporarily unavailable.'));
       
       if (!success) {
+        if (errorType === 'ABORT_ERROR') return;
+        if (errorType === 'AI_UNAVAILABLE' || errorType === 'RESOURCE_EXHAUSTED' || error === 'AI advisory is temporarily unavailable.') {
+          throw new Error(t('AI disease advisory is temporarily unavailable.'));
+        }
         throw new Error(error);
       }
       setAiAdvisory(data.advisory);
     } catch (e) {
-      setAiAdvisoryError((e as Error).message);
+      if ((e as Error).name !== 'AbortError') {
+        setAiAdvisoryError((e as Error).message);
+      }
     } finally {
-      setAiAdvisoryLoading(false);
-      setTimeout(() => {
-        document.getElementById('advisory-result')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
+      if (!signal?.aborted) {
+        setAiAdvisoryLoading(false);
+      }
+      // Only scroll if we successfully fetched (user clicked it initially, or if they changed language and we successfully updated)
+      if (!signal?.aborted && !signal) {
+        setTimeout(() => {
+          document.getElementById('advisory-result')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
     }
   };
 
@@ -445,15 +467,15 @@ export const DiseaseDetection: React.FC = () => {
             <div className="mt-8 flex flex-col items-center gap-6">
               {!aiAdvisory && (result.status === 'DISEASE_DETECTED' || result.status === 'HEALTHY') && (
                 <button
-                  onClick={handleGetAdvisory}
+                  onClick={() => handleGetAdvisory()}
                   disabled={aiAdvisoryLoading}
                   className="bg-primary text-on-primary px-8 py-4 rounded-full font-headline font-extrabold tracking-tight transition-all active:scale-95 shadow-xl shadow-primary/20 flex items-center gap-3 disabled:opacity-70"
                 >
                   {aiAdvisoryLoading ? (
-                    <>
+                    <div className="flex items-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      {t('Generating Advisory...')}
-                    </>
+                      {aiAdvisory ? t("Updating advice...") : t("Generating Advisory...")}
+                    </div>
                   ) : (
                     <>
                       <SproutIcon className="w-5 h-5" />

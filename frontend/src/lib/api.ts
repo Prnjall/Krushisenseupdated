@@ -40,7 +40,14 @@ export async function safeFetchJson<T = any>(
         errorType: 'PARSE_ERROR'
       };
     }
-  } catch (networkError) {
+  } catch (networkError: any) {
+    if (networkError.name === 'AbortError') {
+      return {
+        success: false,
+        error: 'Request was aborted',
+        errorType: 'ABORT_ERROR'
+      };
+    }
     // Fetch itself failed (e.g. network disconnected, CORS)
     return {
       success: false,
