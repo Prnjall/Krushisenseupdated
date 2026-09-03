@@ -295,6 +295,30 @@ def health_check_view(request):
 import urllib.request
 from django.core.cache import cache
 
+# ==============================
+# Advisory Rate Limiting
+# ==============================
+
+def _get_client_ip(request) -> str:
+    """Return the client's IP address, respecting X-Forwarded-For from reverse proxies."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '')
+
+def _is_advisory_rate_limited(ip_address: str, limit: int = 5, timeout: int = 60) -> bool:
+    """
+    Return True if this IP has exceeded `limit` advisory requests within `timeout` seconds.
+    Uses a separate cache namespace ('ratelimit_advisory_') from the interop rate limiter
+    so interop and browser-facing advisory quotas are independent.
+    """
+    cache_key = f"ratelimit_advisory_{ip_address}"
+    count = cache.get(cache_key, 0)
+    if count >= limit:
+        return True
+    cache.set(cache_key, count + 1, timeout)
+    return False
+
 def build_weather_risk_signals(forecast):
     signals = []
     rainy_days = sum(1 for day in forecast if day.get("precipitation_sum", 0) > 0.1)
@@ -521,6 +545,15 @@ from google.genai import types
 @csrf_exempt
 @require_POST
 def agri_advisory_view(request):
+    # 0. Rate limit check
+    ip_addr = _get_client_ip(request)
+    if _is_advisory_rate_limited(ip_addr):
+        return JsonResponse({
+            "success": False,
+            "status": "RATE_LIMITED",
+            "message": "Too many requests. Please try again later."
+        }, status=429)
+
     try:
         data = json.loads(request.body.decode("utf-8"))
     except Exception as e:
@@ -914,6 +947,15 @@ def disease_detection_view(request):
 @csrf_exempt
 @require_POST
 def disease_advisory_view(request):
+    # 0. Rate limit check
+    ip_addr = _get_client_ip(request)
+    if _is_advisory_rate_limited(ip_addr):
+        return JsonResponse({
+            "success": False,
+            "status": "RATE_LIMITED",
+            "message": "Too many requests. Please try again later."
+        }, status=429)
+
     try:
         data = json.loads(request.body.decode("utf-8"))
     except Exception as e:
