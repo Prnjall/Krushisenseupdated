@@ -11,6 +11,7 @@ from google.genai import types
 
 from .schemas import AgriculturalObservation
 from .prompt_builder import build_interop_prompt, get_interop_system_instruction
+from predictions.gemini_utils import generate_content_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,8 @@ def interop_advisory_view(request):
 
     try:
         client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
+        response = generate_content_with_retry(
+            client=client,
             model='gemini-3.6-flash',
             contents=prompt_text,
             config=types.GenerateContentConfig(

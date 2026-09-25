@@ -541,6 +541,7 @@ def satellite_ndvi_view(request):
 import os
 from google import genai
 from google.genai import types
+from .gemini_utils import generate_content_with_retry
 
 @csrf_exempt
 @require_POST
@@ -742,7 +743,8 @@ Return ONLY the required structured JSON response with all string values in {lan
             "required": ["summary", "crop_explanation", "weather_advice", "soil_advice", "satellite_insight", "sustainable_practices", "next_steps", "cautions"]
         }
 
-        response = client.models.generate_content(
+        response = generate_content_with_retry(
+            client=client,
             model='gemini-3.6-flash',
             contents=prompt_text,
             config=types.GenerateContentConfig(
@@ -1176,7 +1178,8 @@ Return ONLY the strictly structured JSON response with all string values in {lan
             "required": ["summary", "what_it_means", "symptoms", "immediate_actions", "sustainable_practices", "prevention", "weather_considerations", "when_to_seek_help", "cautions"]
         }
 
-        response = client.models.generate_content(
+        response = generate_content_with_retry(
+            client=client,
             model='gemini-3.6-flash',
             contents=prompt_text,
             config=types.GenerateContentConfig(
