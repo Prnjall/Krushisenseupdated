@@ -42,7 +42,7 @@ export const cropTranslations: Record<string, { en: string; hi: string; mr: stri
   pulses: { en: "Pulses", hi: "दालें", mr: "डाळी" },
   wheat: { en: "Wheat", hi: "गेहूं", mr: "गहू" }
 };
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { CheckCircle2, Loader2, ArrowRight, MapPin, Layers, Sprout } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

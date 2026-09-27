@@ -5,6 +5,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { safeFetchJson } from '../lib/api';
 import { DiseaseResultCard, DiseaseResult } from './DiseaseResultCard';
 import { DiseaseAdvisoryCard, DiseaseAdvisory } from './DiseaseAdvisoryCard';
+import SpotlightCard from './ui/SpotlightCard';
 
 const SUPPORTED_CROPS = [
   { id: 'apple', label: 'Apple' },
@@ -42,15 +43,17 @@ export const DiseaseDetection: React.FC = () => {
     if (language !== 'en') {
       translateBatch([
         'AI-Assisted Disease Screening',
-        'Upload a clear photo of a crop leaf to screen for common diseases.',
-        'Select Crop',
+        'Screen your crop for common diseases using AI-powered image analysis.',
+        'Select Your Crop',
+        'Upload a Leaf Image',
         'Upload a leaf image',
         'JPG, PNG or WebP • Maximum 5 MB',
-        'Analyze Crop',
+        'Analyze Leaf',
         'Analyzing...',
-        'Drag & drop image here or click to browse',
+        'Drag & drop your image here or choose a source',
         'Take a photo',
         'Remove image',
+        'Change Image',
         'Your image is analyzed for this screening request and is not stored by KrushiSense.',
         'Please select a supported crop first.',
         'File size exceeds 5MB limit.',
@@ -270,176 +273,205 @@ export const DiseaseDetection: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-4xl mx-auto px-4 sm:px-6 py-24 min-h-screen"
       >
-      <header className="mb-12 text-center">
+      <header className="mb-10 text-center">
         <h1 className="font-headline font-black text-3xl sm:text-5xl md:text-6xl tracking-tighter mb-4 text-primary">
           {t('AI-Assisted Disease Screening')}
         </h1>
         <p className="font-body text-on-surface-variant max-w-xl mx-auto text-base md:text-lg leading-relaxed">
-          {t('Upload a clear photo of a crop leaf to screen for common diseases.')}
+          {t('Screen your crop for common diseases using AI-powered image analysis.')}
         </p>
       </header>
 
-      {/* Crop Selection Section */}
-      <section className="mb-10">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm">1</div>
-          <h2 className="font-headline font-bold text-xl text-on-surface">{t('Select Crop')}</h2>
-        </div>
+      {/* Main Workspace Container */}
+      <div className="bg-surface-container-lowest border border-surface-variant/20 rounded-3xl p-6 md:p-10 shadow-sm mb-10">
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {SUPPORTED_CROPS.map((crop) => (
-            <button
-              key={crop.id}
-              onClick={() => handleCropSelect(crop.id)}
-              className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all active:scale-95 border-2 ${
-                selectedCrop === crop.id
-                  ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                  : 'bg-surface-container-low border-transparent text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
-              }`}
-            >
-              <SproutIcon className={`w-8 h-8 ${selectedCrop === crop.id ? 'text-primary' : 'text-on-surface-variant'}`} />
-              <span className="font-headline font-bold">{t(crop.label)}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+        {/* Stage 01 - Crop Selection Section */}
+        <section className="mb-12">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">01</div>
+            <h2 className="font-headline font-bold text-xl text-on-surface">{t('Select Your Crop')}</h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {SUPPORTED_CROPS.map((crop) => (
+              <button
+                key={crop.id}
+                onClick={() => handleCropSelect(crop.id)}
+                className="w-full h-full text-left outline-none rounded-3xl"
+              >
+                <SpotlightCard
+                  spotlightColor="rgba(100, 150, 100, 0.05)"
+                  className={`transition-all duration-300 md:hover:-translate-y-1 h-full flex flex-col items-center justify-center gap-3 md:gap-4 ${
+                    selectedCrop === crop.id
+                      ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/50'
+                      : 'border-surface-variant/20 bg-surface-container-low hover:border-primary/50'
+                  }`}
+                >
+                  <SproutIcon className={`w-8 h-8 md:w-10 md:h-10 transition-transform ${selectedCrop === crop.id ? 'text-primary scale-110' : 'text-on-surface-variant'}`} />
+                  <span className={`font-headline font-bold text-base md:text-lg ${selectedCrop === crop.id ? 'text-primary' : 'text-on-surface'}`}>{t(crop.label)}</span>
+                </SpotlightCard>
+              </button>
+            ))}
+          </div>
+        </section>
 
-      {/* Image Upload Section */}
-      <AnimatePresence>
-        {selectedCrop && (
-          <motion.section 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-10"
+        {/* Stage 02 - Image Upload Section */}
+        <section className="mb-10">
+          <div className="flex items-center gap-4 mb-6 mt-6">
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">02</div>
+            <h2 className="font-headline font-bold text-xl text-on-surface">{t('Upload a Leaf Image')}</h2>
+          </div>
+
+          <div 
+            className={`relative border-2 border-dashed rounded-3xl p-6 md:p-12 transition-all text-center flex flex-col items-center justify-center min-h-[300px]
+              ${previewUrl ? 'border-primary/30 bg-surface-container-lowest' : 'border-outline-variant hover:border-primary/50 bg-surface-container-low hover:bg-surface-container focus-within:border-primary/50'}`}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           >
-            <div className="flex items-center gap-4 mb-6 mt-12">
-              <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm">2</div>
-              <h2 className="font-headline font-bold text-xl text-on-surface">{t('Upload a leaf image')}</h2>
-            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              id="disease-image-upload"
+            />
+            <input
+              type="file"
+              ref={cameraInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              id="disease-image-upload-camera"
+            />
+            <input
+              type="file"
+              ref={galleryInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+              id="disease-image-upload-gallery"
+            />
 
-            <div 
-              className={`relative border-2 border-dashed rounded-3xl p-6 md:p-12 transition-all text-center flex flex-col items-center justify-center min-h-[300px]
-                ${previewUrl ? 'border-primary/30 bg-surface-container-lowest' : 'border-outline-variant hover:border-primary/50 bg-surface-container-low hover:bg-surface-container'}`}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                id="disease-image-upload"
-              />
-              <input
-                type="file"
-                ref={cameraInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                id="disease-image-upload-camera"
-              />
-              <input
-                type="file"
-                ref={galleryInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-                id="disease-image-upload-gallery"
-              />
-
-              {!previewUrl ? (
-                <>
-                  <div className="bg-surface-container-highest p-4 rounded-full mb-6">
-                    <UploadCloud className="w-10 h-10 text-primary" />
-                  </div>
-                  <h3 className="font-headline font-bold text-lg mb-2 text-on-surface">
-                    {t('Drag & drop image here or click to browse')}
-                  </h3>
-                  <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-8">
-                    {t('JPG, PNG or WebP • Maximum 5 MB')}
-                  </p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      type="button"
-                      onClick={handleUploadClick}
-                      className="bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity active:scale-95"
-                    >
-                      {t('Upload a leaf image')}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="w-full flex flex-col items-center">
-                  <div className="relative rounded-2xl overflow-hidden shadow-lg border border-outline-variant/20 mb-6 max-w-sm w-full">
-                    <img src={previewUrl} alt="Leaf preview" className="w-full h-auto object-cover max-h-[400px]" />
-                    <button
-                      onClick={handleRemoveImage}
-                      className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all active:scale-90"
-                      aria-label={t('Remove image')}
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-on-surface-variant bg-surface-container-high px-4 py-2 rounded-full">
-                    <ImageIcon className="w-4 h-4" />
-                    <span className="font-medium truncate max-w-[200px]">{selectedFile?.name}</span>
-                    <span>•</span>
-                    <span>{(selectedFile!.size / (1024 * 1024)).toFixed(2)} MB</span>
-                  </div>
+            {!previewUrl ? (
+              <>
+                <div className="bg-surface-container-highest p-4 rounded-full mb-6">
+                  <ImageIcon className="w-10 h-10 text-primary" />
                 </div>
-              )}
-            </div>
-
-            {validationError && (
-              <div className="mt-4 p-4 bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl font-medium text-sm flex items-center gap-2">
-                <X className="w-5 h-5" />
-                {validationError}
+                <h3 className="font-headline font-bold text-xl mb-2 text-on-surface">
+                  {t('Upload a leaf image')}
+                </h3>
+                <p className="text-sm text-on-surface-variant mb-6 max-w-sm">
+                  {t('Drag & drop your image here or choose a source')}
+                </p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-8">
+                  {t('JPG, PNG or WebP • Maximum 5 MB')}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.innerWidth < 768) {
+                        setShowMobileUploadMenu(true);
+                      } else {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className="bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <UploadCloud className="w-5 h-5" />
+                    {t('Upload Image')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.innerWidth < 768) {
+                        setShowMobileUploadMenu(true);
+                      } else {
+                        // Desktop fallback if camera is clicked - just open file browser since most desktops don't have good back cameras
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className="bg-surface-container-highest text-on-surface px-8 py-3 rounded-full font-bold hover:bg-surface-dim transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 border border-surface-variant/30"
+                  >
+                    <Camera className="w-5 h-5 text-primary" />
+                    {t('Camera')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="w-full flex flex-col items-center">
+                <div className="relative rounded-2xl overflow-hidden shadow-lg border border-outline-variant/20 mb-6 max-w-sm w-full bg-surface-container-high">
+                  <img src={previewUrl} alt="Leaf preview" className="w-full h-auto object-cover max-h-[350px]" />
+                  <button
+                    onClick={handleRemoveImage}
+                    className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all active:scale-90"
+                    aria-label={t('Remove image')}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-on-surface-variant bg-surface-container-high px-4 py-2 rounded-full mb-6">
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="font-medium truncate max-w-[200px]">{selectedFile?.name}</span>
+                  <span>•</span>
+                  <span>{(selectedFile!.size / (1024 * 1024)).toFixed(2)} MB</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.innerWidth < 768) {
+                      setShowMobileUploadMenu(true);
+                    } else {
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  className="bg-surface-container-highest text-on-surface px-6 py-2.5 rounded-full font-bold hover:bg-surface-dim transition-all active:scale-95 flex items-center justify-center gap-2 border border-surface-variant/30 text-sm"
+                >
+                  {t('Change Image')}
+                </button>
               </div>
             )}
+          </div>
 
-            <div className="mt-4 text-center">
-              <p className="text-xs text-on-surface-variant flex items-center justify-center gap-1.5 opacity-80">
-                <span className="w-2 h-2 rounded-full bg-primary/40 inline-block"></span>
-                {t('Your image is analyzed for this screening request and is not stored by KrushiSense.')}
-              </p>
+          {validationError && (
+            <div className="mt-4 p-4 bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl font-medium text-sm flex items-center gap-2">
+              <X className="w-5 h-5" />
+              {validationError}
             </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+          )}
 
-      {/* Analysis Button */}
-      <AnimatePresence>
-        {selectedCrop && selectedFile && !result && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="flex justify-center mt-12 mb-16"
+          <div className="mt-6 text-center">
+            <p className="text-xs text-on-surface-variant flex items-center justify-center gap-1.5 opacity-80">
+              <span className="w-2 h-2 rounded-full bg-primary/40 inline-block"></span>
+              {t('Your image is analyzed for this screening request and is not stored by KrushiSense.')}
+            </p>
+          </div>
+        </section>
+
+        {/* Stage 03 - Analysis Button */}
+        <section className="pt-6 border-t border-surface-variant/20 flex flex-col items-center">
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || !selectedCrop || !selectedFile}
+            className="bg-primary text-on-primary px-10 py-4 rounded-full font-headline font-extrabold text-lg tracking-tight uppercase transition-all active:scale-95 shadow-xl shadow-primary/30 flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 w-full sm:w-auto justify-center hover:-translate-y-1"
           >
-            <button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className="bg-primary text-on-primary px-12 py-5 rounded-full font-headline font-extrabold text-lg tracking-tight uppercase transition-all active:scale-95 shadow-xl shadow-primary/30 flex items-center gap-3 disabled:opacity-70 w-full sm:w-auto justify-center"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  {t('Analyzing...')}
-                </>
-              ) : (
-                <>
-                  {t('Analyze Crop')}
-                  <ChevronRight className="w-6 h-6" />
-                </>
-              )}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                {t('Analyzing...')}
+              </>
+            ) : (
+              <>
+                {t('Analyze Leaf')}
+                <ChevronRight className="w-6 h-6" />
+              </>
+            )}
+          </button>
+        </section>
+      </div>
 
       {/* Result Section */}
       <AnimatePresence>
