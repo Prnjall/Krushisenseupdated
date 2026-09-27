@@ -22,8 +22,7 @@ def client():
 
 @pytest.fixture
 def mock_gemini():
-    with patch('predictions.interoperability.views.genai.Client') as mock_client:
-        mock_instance = MagicMock()
+    with patch('predictions.ai.gemini_provider.generate_content_with_retry') as mock_retry:
         mock_response = MagicMock()
         mock_response.text = json.dumps({
             "summary": "Mock summary",
@@ -35,10 +34,8 @@ def mock_gemini():
             "next_steps": ["Mock step"],
             "cautions": ["Mock caution"]
         })
-        mock_response.model_version = "gemini-3.6-flash"
-        mock_instance.models.generate_content.return_value = mock_response
-        mock_client.return_value = mock_instance
-        yield mock_client
+        mock_retry.return_value = mock_response
+        yield mock_retry
 
 def get_base_payload():
     return {
@@ -127,8 +124,15 @@ def test_interop_api_pydantic_validation_error(client):
 
 def test_interop_api_gemini_failure(client, mock_gemini, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test_key")
-    mock_gemini.return_value.models.generate_content.side_effect = Exception("API Error")
-    
+
+    class DummyServerError(Exception):
+        def __init__(self, code):
+            self.code = code
+
+    import predictions.ai.gemini_provider
+    monkeypatch.setattr(predictions.ai.gemini_provider, 'ServerError', DummyServerError)
+    mock_gemini.side_effect = DummyServerError(503)
+
     response = client.post(
         '/api/v1/interop/advisory/',
         data=json.dumps(get_base_payload()),
@@ -139,15 +143,17 @@ def test_interop_api_gemini_failure(client, mock_gemini, monkeypatch):
 
 def test_interop_api_gemini_malformed_json(client, mock_gemini, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test_key")
-    mock_gemini.return_value.models.generate_content.return_value.text = "invalid json response"
+    mock_gemini.return_value.text = "invalid json response"
     
     response = client.post(
         '/api/v1/interop/advisory/',
         data=json.dumps(get_base_payload()),
         content_type='application/json'
     )
-    assert response.status_code == 502
-    assert response.json()["status"] == "AI_INVALID_RESPONSE"
+    # Orchestrator now treats invalid JSON as TransientAIError (fallback candidate)
+    # So if fallback is absent, it propagates as Transient -> 503
+    assert response.status_code == 503
+    assert response.json()["status"] == "AI_UNAVAILABLE"
 
 def test_gps_coordinates_never_logged(client, mock_gemini, monkeypatch, caplog):
     monkeypatch.setenv("GEMINI_API_KEY", "test_key")
@@ -171,15 +177,13 @@ def test_gps_coordinates_never_logged(client, mock_gemini, monkeypatch, caplog):
 
 def _mock_agri_advisory_gemini():
     """Shared mock factory for predictions.views Gemini client."""
-    mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.text = json.dumps({
         "summary": "mock", "crop_explanation": "mock", "weather_advice": "mock",
         "soil_advice": "mock", "satellite_insight": "mock",
         "sustainable_practices": [], "next_steps": [], "cautions": []
     })
-    mock_client.return_value.models.generate_content.return_value = mock_response
-    return patch('predictions.views.genai.Client', mock_client)
+    return patch('predictions.ai.gemini_provider.generate_content_with_retry', return_value=mock_response)
 
 
 def _agri_payload():
@@ -304,15 +308,14 @@ def test_advisory_and_interop_rate_limits_are_independent(client, monkeypatch):
         "context": {"language": "en", "region": "Test", "country": "India"}
     }
     with _mock_agri_advisory_gemini():
-        with patch('predictions.interoperability.views.genai.Client') as mock_interop:
+        with patch('predictions.ai.gemini_provider.generate_content_with_retry') as mock_interop:
             mock_interop_resp = MagicMock()
             mock_interop_resp.text = json.dumps({
                 "summary": "mock", "crop_explanation": "mock", "weather_advice": "mock",
                 "soil_advice": "mock", "satellite_insight": "mock",
                 "sustainable_practices": [], "next_steps": [], "cautions": []
             })
-            mock_interop_resp.model_version = "gemini-3.6-flash"
-            mock_interop.return_value.models.generate_content.return_value = mock_interop_resp
+            mock_interop.return_value = mock_interop_resp
 
             ip = '10.0.0.5'
 

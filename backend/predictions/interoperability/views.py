@@ -11,7 +11,8 @@ from google.genai import types
 
 from .schemas import AgriculturalObservation
 from .prompt_builder import build_interop_prompt, get_interop_system_instruction
-from predictions.gemini_utils import generate_content_with_retry
+from predictions.ai.orchestrator import AIOrchestrator
+from predictions.ai.errors import TransientAIError, PermanentAIError, AIConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -78,13 +79,7 @@ def interop_advisory_view(request):
         }, status=400)
 
     # 3. Gemini Authentication
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return JsonResponse({
-            "success": False,
-            "status": "AI_UNAVAILABLE",
-            "message": "AI advisory is currently unavailable."
-        }, status=503)
+    # Removing direct API key check here so orchestrator handles it.
 
     # 4. Build Prompt
     prompt_text = build_interop_prompt(obs)
@@ -116,48 +111,48 @@ def interop_advisory_view(request):
     }
 
     try:
-        client = genai.Client(api_key=api_key)
-        response = generate_content_with_retry(
-            client=client,
-            model='gemini-3.6-flash',
-            contents=prompt_text,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                response_schema=response_schema,
-                temperature=0.2,
-            ),
+        orchestrator = AIOrchestrator()
+        advisory_data, metadata = orchestrator.generate_advisory_with_fallback(
+            prompt_text=prompt_text,
+            system_instruction=system_instruction,
+            response_schema=response_schema,
+            temperature=0.2
         )
         
-        advisory_data = json.loads(response.text)
-        
         # Identify model version if possible
-        model_version = "gemini-3.6-flash"
-        if hasattr(response, "model_version") and response.model_version:
-            model_version = response.model_version
+        model_version = metadata.get("model_version", "unknown")
+        provider = metadata.get("provider", "Unknown Provider")
             
         return JsonResponse({
             "success": True,
             "schema_version": "1.0",
             "advisory": advisory_data,
             "provenance": {
-                "source_id": "krushisense_gemini_advisory",
-                "provider": "Google Gemini",
+                "source_id": "krushisense_ai_advisory",
+                "provider": provider,
                 "freshness_category": "AI_GENERATED",
                 "model_version": model_version
             }
         })
 
-    except json.JSONDecodeError:
+    except AIConfigurationError as e:
+        logger.error(f"Interop Advisory Configuration Error: {str(e)}")
         return JsonResponse({
             "success": False,
-            "status": "AI_INVALID_RESPONSE",
-            "message": "AI returned malformed data."
-        }, status=502)
-    except Exception as e:
-        logger.error(f"Gemini API Error in interop_advisory: {str(e)}")
+            "status": "AI_UNAVAILABLE",
+            "message": "AI advisory is currently unavailable."
+        }, status=503)
+    except TransientAIError as e:
+        logger.error(f"Interop Advisory Transient Error: {str(e)}")
         return JsonResponse({
             "success": False,
             "status": "AI_UNAVAILABLE",
             "message": "AI advisory service failed."
         }, status=503)
+    except PermanentAIError as e:
+        logger.error(f"Interop Advisory Permanent Error: {str(e)}")
+        return JsonResponse({
+            "success": False,
+            "status": "AI_INVALID_RESPONSE",
+            "message": "AI returned malformed data or request was invalid."
+        }, status=502)

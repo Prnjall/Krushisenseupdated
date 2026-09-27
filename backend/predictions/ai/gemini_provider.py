@@ -1,0 +1,77 @@
+import json
+import logging
+import os
+from typing import Any, Dict
+
+from google import genai
+from google.genai import types
+from google.genai.errors import ServerError, ClientError
+
+from .interface import AIProvider
+from .errors import TransientAIError, PermanentAIError, AIConfigurationError
+from predictions.gemini_utils import generate_content_with_retry
+
+logger = logging.getLogger(__name__)
+
+class GeminiProvider(AIProvider):
+    def __init__(self):
+        self._model = 'gemini-3.6-flash'
+
+    @property
+    def provider_name(self) -> str:
+        return "Google Gemini"
+
+    @property
+    def model_version(self) -> str:
+        return self._model
+
+    def generate_advisory(
+        self,
+        prompt_text: str,
+        system_instruction: str,
+        response_schema: Dict[str, Any],
+        temperature: float = 0.2
+    ) -> Dict[str, Any]:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise AIConfigurationError("GEMINI_API_KEY is not configured.")
+
+        client = genai.Client(api_key=api_key)
+
+        try:
+            response = generate_content_with_retry(
+                client=client,
+                model=self._model,
+                contents=prompt_text,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                    response_schema=response_schema,
+                    temperature=temperature,
+                ),
+            )
+
+            advisory_data = json.loads(response.text)
+            return advisory_data
+
+        except ServerError as e:
+            # 500, 503, 504 are usually ServerErrors
+            logger.warning(f"Gemini ServerError: {e}")
+            raise TransientAIError(f"Gemini service unavailable: {e}") from e
+        except ClientError as e:
+            # 400 (Bad Request), 403, 401
+            logger.error(f"Gemini ClientError: {e}")
+            raise PermanentAIError(f"Gemini client error: {e}") from e
+        except json.JSONDecodeError as e:
+            logger.error(f"Gemini returned invalid JSON: {e}")
+            raise TransientAIError(f"Gemini returned malformed data: {e}") from e
+        except Exception as e:
+            # Check for connection errors, timeouts, etc.
+            error_str = str(e).lower()
+            if "timeout" in error_str or "connection" in error_str:
+                logger.warning(f"Gemini connection issue: {e}")
+                raise TransientAIError(f"Gemini connection failed: {e}") from e
+
+            # Default to permanent error for unknown exceptions to prevent fallback loops
+            logger.error(f"Gemini unexpected error: {e}")
+            raise PermanentAIError(f"Gemini unexpected error: {e}") from e
