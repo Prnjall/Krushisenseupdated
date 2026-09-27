@@ -98,6 +98,33 @@ class TestAIOrchestrator(unittest.TestCase):
     @patch("predictions.ai.gemini_provider.generate_content_with_retry")
     @patch("predictions.ai.openai_provider.OpenAI")
     @patch("os.getenv")
+    def test_gemini_429_fallback_to_openai(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        with patch('predictions.ai.gemini_provider.ClientError', DummyClientError):
+            # Gemini raises 429 ClientError
+            mock_gemini_generate.side_effect = DummyClientError(429)
+
+            # OpenAI succeeds
+            mock_openai_client = MagicMock()
+            mock_chat_response = MagicMock()
+            mock_chat_response.choices[0].message.content = '{"summary": "OpenAI summary"}'
+            mock_openai_client.chat.completions.create.return_value = mock_chat_response
+            mock_openai.return_value = mock_openai_client
+
+            orchestrator = AIOrchestrator()
+            advisory, metadata = orchestrator.generate_advisory_with_fallback(
+                prompt_text="test", system_instruction="test", response_schema=self.response_schema
+            )
+
+            self.assertEqual(advisory["summary"], "OpenAI summary")
+            self.assertEqual(metadata["provider"], "OpenAI")
+            mock_gemini_generate.assert_called_once()
+            mock_openai.assert_called_once()
+
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
     def test_both_providers_fail(self, mock_getenv, mock_openai, mock_gemini_generate):
         mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
 

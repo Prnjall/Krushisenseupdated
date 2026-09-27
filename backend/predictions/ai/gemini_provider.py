@@ -59,6 +59,10 @@ class GeminiProvider(AIProvider):
             logger.warning(f"Gemini ServerError: {e}")
             raise TransientAIError(f"Gemini service unavailable: {e}") from e
         except ClientError as e:
+            # Check for 429 RESOURCE_EXHAUSTED specifically
+            if getattr(e, 'code', None) == 429:
+                logger.warning(f"Gemini quota exhausted (429): {e}")
+                raise TransientAIError(f"Gemini quota exhausted: {e}") from e
             # 400 (Bad Request), 403, 401
             logger.error(f"Gemini ClientError: {e}")
             raise PermanentAIError(f"Gemini client error: {e}") from e
