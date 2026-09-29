@@ -725,7 +725,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     if (missingTexts.length === 0) return;
 
-    setLoading(true);
     try {
       const result: Record<string, string> = {};
       
@@ -755,8 +754,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setDynamicTranslations(prev => ({ ...prev, ...result }));
     } catch (error) {
       console.error("Batch translation error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 

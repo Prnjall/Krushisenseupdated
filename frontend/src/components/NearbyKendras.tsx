@@ -162,21 +162,6 @@ export const NearbyKendras = () => {
     };
   }, [kvks]);
 
-  // Translation hook
-  useEffect(() => {
-    if (language === 'en' || kvks.length === 0) return;
-    
-    const stringsToTranslate = new Set<string>();
-    kvks.forEach(kvk => {
-      stringsToTranslate.add(kvk.name);
-      if (kvk.district) stringsToTranslate.add(kvk.district);
-      if (kvk.state) stringsToTranslate.add(kvk.state);
-    });
-    STATE_LIST.forEach(s => stringsToTranslate.add(s));
-    availableDistricts.forEach(d => stringsToTranslate.add(d));
-    
-    translateBatch(Array.from(stringsToTranslate));
-  }, [language, translateBatch, kvks, availableDistricts]);
 
   function handleStateChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newState = e.target.value;
