@@ -14,5 +14,4 @@ urlpatterns = [
     path('v1/interop/advisory/', interop_views.interop_advisory_view, name='interop_advisory'),
     path('v1/kvks/', views_kvk.list_kvks_view, name='list_kvks'),
     path('v1/kvks/nearest/', views_kvk.nearest_kvk_view, name='nearest_kvk'),
-    # path('predict-yield', views.predict_yield_view, name='predict_yield'),
 ]
