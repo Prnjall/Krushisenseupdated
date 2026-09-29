@@ -95,6 +95,12 @@ cors_origins_env = os.environ.get(
 )
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
 
+cors_regexes_env = os.environ.get(
+    'CORS_ALLOWED_ORIGIN_REGEXES', 
+    r'^https://krushisenseupdated-[a-zA-Z0-9\-]+-pranjals-projects-[a-zA-Z0-9]+\.vercel\.app$'
+)
+CORS_ALLOWED_ORIGIN_REGEXES = [r.strip() for r in cors_regexes_env.split(',') if r.strip()]
+
 # CSRF Configuration
 csrf_origins_env = os.environ.get(
     'CSRF_TRUSTED_ORIGINS',
