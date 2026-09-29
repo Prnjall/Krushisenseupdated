@@ -260,7 +260,7 @@ export const NearbyKendras = () => {
             className="w-full h-12 bg-surface-container text-on-surface rounded-xl px-4 font-body focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
           >
             {STATE_LIST.map((stateName) => (
-              <option key={stateName} value={stateName}>
+              <option key={stateName} value={stateName} className="bg-surface-container-lowest text-on-surface">
                 {t(stateName)}
               </option>
             ))}
@@ -275,7 +275,7 @@ export const NearbyKendras = () => {
             className="w-full h-12 bg-surface-container text-on-surface rounded-xl px-4 font-body focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
           >
             {availableDistricts.map((distName) => (
-              <option key={distName} value={distName}>
+              <option key={distName} value={distName} className="bg-surface-container-lowest text-on-surface">
                 {t(distName)}
               </option>
             ))}
@@ -399,7 +399,7 @@ export const NearbyKendras = () => {
       {/* Details Modal */}
       <AnimatePresence>
         {selectedKvk && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

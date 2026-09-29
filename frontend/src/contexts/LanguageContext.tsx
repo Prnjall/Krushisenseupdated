@@ -353,7 +353,13 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "Failed to generate interoperable advisory": "इंटरऑपरेबल सलाह उत्पन्न करने में विफल",
     "Network error connecting to interoperability endpoint.": "इंटरऑपरेबिलिटी एंडपॉइंट से कनेक्ट करते समय नेटवर्क त्रुटि।",
     "Partner AI Response": "भागीदार एआई प्रतिक्रिया",
-    "Intervention": "हस्तक्षेप"
+    "Intervention": "हस्तक्षेप",
+    "All of India": "पूरा भारत",
+    "Maharashtra": "महाराष्ट्र",
+    "Kerala": "केरल",
+    "Bihar": "बिहार",
+    "Karnataka": "कर्नाटक",
+    "Wayanad": "वायनाड"
   },
   mr: {
     "Home": "होम",
@@ -645,7 +651,13 @@ const staticTranslations: Record<Language, Record<string, string>> = {
     "Failed to generate interoperable advisory": "इंटरऑपरेबल सल्ला तयार करण्यात अयशस्वी",
     "Network error connecting to interoperability endpoint.": "इंटरऑपरेबिलिटी एंडपॉइंटशी कनेक्ट करताना नेटवर्क त्रुटी.",
     "Partner AI Response": "भागीदार एआय प्रतिसाद",
-    "Intervention": "हस्तक्षेप"
+    "Intervention": "हस्तक्षेप",
+    "All of India": "संपूर्ण भारत",
+    "Maharashtra": "महाराष्ट्र",
+    "Kerala": "केरळ",
+    "Bihar": "बिहार",
+    "Karnataka": "कर्नाटक",
+    "Wayanad": "वायनाड"
   }
 };
 
