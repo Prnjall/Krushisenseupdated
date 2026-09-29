@@ -4,7 +4,7 @@ import { UploadCloud, Image as ImageIcon, X, Loader2, Camera, ChevronRight } fro
 import { useTranslation } from '../contexts/LanguageContext';
 import { safeFetchJson } from '../lib/api';
 import { DiseaseResultCard, DiseaseResult } from './DiseaseResultCard';
-import { DiseaseAdvisoryCard, DiseaseAdvisory } from './DiseaseAdvisoryCard';
+import { DiseaseAdvisoryCard, DiseaseAdvisoryResponse } from './DiseaseAdvisoryCard';
 import SpotlightCard from './ui/SpotlightCard';
 
 const SUPPORTED_CROPS = [
@@ -25,7 +25,7 @@ export const DiseaseDetection: React.FC = () => {
   const [result, setResult] = useState<DiseaseResult | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   
-  const [aiAdvisory, setAiAdvisory] = useState<DiseaseAdvisory | null>(null);
+  const [aiAdvisory, setAiAdvisory] = useState<DiseaseAdvisoryResponse | null>(null);
   const [aiAdvisoryLoading, setAiAdvisoryLoading] = useState(false);
   const [aiAdvisoryError, setAiAdvisoryError] = useState<string | null>(null);
   
@@ -71,7 +71,15 @@ export const DiseaseDetection: React.FC = () => {
         'Maize Cercospora Leaf Spot', 'Maize Common Rust', 'Maize Northern Leaf Blight',
         'Grape Black Rot', 'Grape Esca', 'Grape Leaf Blight',
         'Rice Bacterial Leaf Blight', 'Rice Brown Spot', 'Rice Leaf Smut',
-        'Updating advice...'
+        'Updating advice...',
+        'Please select a leaf image for AI-assisted visual assessment.',
+        'AI-Assisted Visual Assessment',
+        'Uncertainty Disclaimer',
+        'Possible Condition',
+        'Confidence Level',
+        'Visual Evidence',
+        'Recommended Next Step',
+        'The screening result is uncertain. You can request an AI-assisted visual assessment for further context.'
       ]);
     }
   }, [language, translateBatch]);
@@ -215,6 +223,14 @@ export const DiseaseDetection: React.FC = () => {
   const handleGetAdvisory = async (signal?: AbortSignal) => {
     if (!result || !selectedCrop) return;
     
+    // Explicit Vision Request Check
+    const isVisionRequest = result.status === 'LOW_CONFIDENCE';
+
+    if (isVisionRequest && !selectedFile) {
+      setAiAdvisoryError(t('Please select a leaf image for AI-assisted visual assessment.'));
+      return;
+    }
+
     setAiAdvisoryLoading(true);
     setAiAdvisoryError(null);
     
@@ -234,12 +250,29 @@ export const DiseaseDetection: React.FC = () => {
         satellite: { status: "UNAVAILABLE" }
       };
 
-      const { success, data, error, errorType } = await safeFetchJson('/api/disease-advisory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: signal
-      }, t('AI disease advisory is temporarily unavailable.'));
+      let options: RequestInit;
+
+      if (isVisionRequest && selectedFile) {
+        const formData = new FormData();
+        formData.append('data', JSON.stringify(payload));
+        formData.append('image', selectedFile);
+
+        options = {
+          method: 'POST',
+          // Note: Let the browser automatically set the Content-Type header to multipart/form-data with boundary
+          body: formData,
+          signal: signal
+        };
+      } else {
+        options = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: signal
+        };
+      }
+
+      const { success, data, error, errorType } = await safeFetchJson('/api/disease-advisory', options, t('AI disease advisory is temporarily unavailable.'));
       
       if (!success) {
         if (errorType === 'ABORT_ERROR') return;
@@ -497,7 +530,7 @@ export const DiseaseDetection: React.FC = () => {
 
             {/* AI Advisory Section */}
             <div className="mt-8 flex flex-col items-center gap-6">
-              {!aiAdvisory && (result.status === 'DISEASE_DETECTED' || result.status === 'HEALTHY') && (
+              {!aiAdvisory && (result.status === 'DISEASE_DETECTED' || result.status === 'HEALTHY' || result.status === 'LOW_CONFIDENCE') && (
                 <button
                   onClick={() => handleGetAdvisory()}
                   disabled={aiAdvisoryLoading}
@@ -519,7 +552,7 @@ export const DiseaseDetection: React.FC = () => {
 
               {result.status === 'LOW_CONFIDENCE' && (
                 <p className="text-on-surface-variant font-medium text-center text-sm max-w-md px-4">
-                  {t('AI advisory is unavailable because the disease screening result is uncertain.')}
+                  {t('The screening result is uncertain. You can request an AI-assisted visual assessment for further context.')}
                 </p>
               )}
 

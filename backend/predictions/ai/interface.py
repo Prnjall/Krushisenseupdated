@@ -29,3 +29,21 @@ class AIProvider(ABC):
         Raises AIConfigurationError if misconfigured.
         """
         pass
+
+    @abstractmethod
+    def generate_vision_content(
+        self,
+        prompt_text: str,
+        image_bytes: bytes,
+        mime_type: str,
+        system_instruction: str,
+        response_schema: Dict[str, Any],
+        temperature: float = 0.2
+    ) -> Dict[str, Any]:
+        """
+        Generates a multimodal advisory.
+        Raises TransientAIError on infrastructure issues.
+        Raises PermanentAIError on fatal prompt/schema/auth issues.
+        Raises AIConfigurationError if misconfigured.
+        """
+        pass

@@ -1,362 +1,519 @@
-import { motion } from "motion/react";
-import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Map,
   MapMarker,
-  MarkerContent,
-  MarkerLabel,
   MarkerPopup,
 } from "@/src/components/ui/map";
 import { Button } from "@/src/components/ui/button";
-import { Navigation, ExternalLink, FlaskConical, Truck, Phone } from "lucide-react";
+import { Navigation, ExternalLink, Search, X, CheckCircle2, AlertCircle, MapPin, Globe, Phone, Mail, Building, Info, Loader2 } from "lucide-react";
 import { useTranslation } from "../contexts/LanguageContext";
+import { safeFetchJson } from "@/src/lib/api";
 
-// ── Complete Maharashtra KVK Dataset ─────────────────────────────────────────
-const kvks = [
-  // WESTERN MAHARASHTRA
-  { id: 1,  name: "KVK Baramati",    district: "Pune",       region: "western",    phone: "02112-255207", lat: 18.1522, lng: 74.5815, mobileLab: true,  soilCost: "₹100–₹150", tests: "pH, N, P, K, OC, Micronutrients" },
-  { id: 2,  name: "KVK Narayangaon", district: "Pune",       region: "western",    phone: "02132-242216", lat: 19.1007, lng: 73.9894, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 3,  name: "KVK Kolhapur",    district: "Kolhapur",   region: "western",    phone: "0231-2651420", lat: 16.7050, lng: 74.2433, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 4,  name: "KVK Satara",      district: "Satara",     region: "western",    phone: "02162-220013", lat: 17.6805, lng: 74.0183, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 5,  name: "KVK Sangli",      district: "Sangli",     region: "western",    phone: "0233-2226789", lat: 16.8524, lng: 74.5815, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 6,  name: "KVK Solapur",     district: "Solapur",    region: "western",    phone: "02189-233001", lat: 17.6599, lng: 75.9064, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-
-  // NORTH MAHARASHTRA
-  { id: 7,  name: "KVK Nashik",      district: "Nashik",     region: "north",      phone: "0253-2231473", lat: 20.0059, lng: 73.7897, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC, Micronutrients" },
-  { id: 8,  name: "KVK Ahmednagar",  district: "Ahmednagar", region: "north",      phone: "02422-252414", lat: 19.6586, lng: 74.7239, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 9,  name: "KVK Dhule",       district: "Dhule",      region: "north",      phone: "02562-232095", lat: 20.9013, lng: 74.7749, mobileLab: false, soilCost: "₹100–₹150", tests: "pH, N, P, K, OC" },
-  { id: 10, name: "KVK Jalgaon",     district: "Jalgaon",    region: "north",      phone: "0257-2226833", lat: 21.0077, lng: 75.5626, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 11, name: "KVK Nandurbar",   district: "Nandurbar",  region: "north",      phone: "02564-220012", lat: 21.3683, lng: 74.2437, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-
-  // MARATHWADA
-  { id: 12, name: "KVK Aurangabad",  district: "Aurangabad", region: "marathwada", phone: "0240-2376558", lat: 19.8762, lng: 75.3433, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC, Micronutrients" },
-  { id: 13, name: "KVK Latur",       district: "Latur",      region: "marathwada", phone: "02382-257766", lat: 18.4088, lng: 76.5604, mobileLab: false, soilCost: "₹100–₹150", tests: "pH, N, P, K, OC" },
-  { id: 14, name: "KVK Nanded",      district: "Nanded",     region: "marathwada", phone: "02465-227848", lat: 18.9068, lng: 77.2976, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 15, name: "KVK Osmanabad",   district: "Osmanabad",  region: "marathwada", phone: "02471-224011", lat: 18.1862, lng: 76.0404, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 16, name: "KVK Hingoli",     district: "Hingoli",    region: "marathwada", phone: "07246-222134", lat: 19.7176, lng: 77.1496, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 17, name: "KVK Beed",        district: "Beed",       region: "marathwada", phone: "02442-222011", lat: 18.9891, lng: 75.7601, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-
-  // VIDARBHA
-  { id: 18, name: "KVK Nagpur",      district: "Nagpur",     region: "vidarbha",   phone: "0712-2500477", lat: 21.1458, lng: 79.0882, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC, Micronutrients" },
-  { id: 19, name: "KVK Amravati",    district: "Amravati",   region: "vidarbha",   phone: "0721-2580606", lat: 20.9374, lng: 77.7796, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 20, name: "KVK Washim",      district: "Washim",     region: "vidarbha",   phone: "07251-222462", lat: 20.1119, lng: 77.1332, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC, Micronutrients" },
-  { id: 21, name: "KVK Yavatmal",    district: "Yavatmal",   region: "vidarbha",   phone: "07232-248235", lat: 20.3888, lng: 78.1204, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 22, name: "KVK Akola",       district: "Akola",      region: "vidarbha",   phone: "0724-2258271", lat: 20.7002, lng: 77.0082, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC, Micronutrients" },
-  { id: 23, name: "KVK Buldhana",    district: "Buldhana",   region: "vidarbha",   phone: "07262-242011", lat: 20.5292, lng: 76.1842, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 24, name: "KVK Wardha",      district: "Wardha",     region: "vidarbha",   phone: "07152-240011", lat: 20.7453, lng: 78.6022, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 25, name: "KVK Chandrapur",  district: "Chandrapur", region: "vidarbha",   phone: "07176-222134", lat: 19.9615, lng: 79.2961, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 26, name: "KVK Gadchiroli",  district: "Gadchiroli", region: "vidarbha",   phone: "07132-222011", lat: 20.1809, lng: 80.0016, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 27, name: "KVK Gondia",      district: "Gondia",     region: "vidarbha",   phone: "07182-222011", lat: 21.4624, lng: 80.1967, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 28, name: "KVK Bhandara",    district: "Bhandara",   region: "vidarbha",   phone: "07184-222011", lat: 21.1662, lng: 79.6471, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-
-  // KONKAN
-  { id: 29, name: "KVK Raigad",      district: "Raigad",     region: "konkan",     phone: "02148-222248", lat: 18.9107, lng: 73.3213, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 30, name: "KVK Ratnagiri",   district: "Ratnagiri",  region: "konkan",     phone: "02352-232095", lat: 16.8972, lng: 73.5131, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 31, name: "KVK Sindhudurg",  district: "Sindhudurg", region: "konkan",     phone: "02362-222011", lat: 16.2670, lng: 73.7015, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 32, name: "KVK Thane",       district: "Thane",      region: "konkan",     phone: "02528-241439", lat: 19.9975, lng: 72.7178, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
-  { id: 33, name: "KVK Palghar",     district: "Palghar",    region: "konkan",     phone: "02525-222011", lat: 19.6967, lng: 72.7697, mobileLab: false, soilCost: "₹100–₹200", tests: "pH, N, P, K, OC" },
+const STATE_LIST = [
+  "All of India",
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", 
+  "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", 
+  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", 
+  "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
+  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
 
-const REGIONS = [
-  { key: "all",        label: "All Regions" },
-  { key: "western",    label: "Western MH"  },
-  { key: "marathwada", label: "Marathwada"  },
-  { key: "vidarbha",   label: "Vidarbha"    },
-  { key: "konkan",     label: "Konkan"      },
-  { key: "north",      label: "North MH"    },
-];
-
-const REGION_VIEWS: Record<string, { center: [number, number], zoom: number }> = {
-  all:        { center: [76.5, 19.2], zoom: 6.2 },
-  western:    { center: [74.8, 17.5], zoom: 7.5 },
-  marathwada: { center: [76.5, 19.0], zoom: 7.5 },
-  vidarbha:   { center: [78.8, 20.5], zoom: 7.2 },
-  konkan:     { center: [73.3, 17.8], zoom: 7.5 },
-  north:      { center: [74.8, 20.5], zoom: 7.5 },
-};
-
-function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+function LocationStatusBadge({ kvk }: { kvk: any }) {
+  const { t } = useTranslation();
+  if (kvk.latitude && kvk.longitude) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+        <CheckCircle2 className="size-3.5" />
+        {t("Exact location verified")}
+      </div>
+    );
+  }
+  if (kvk.address) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+        <MapPin className="size-3.5" />
+        {t("Official address available")}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+      <AlertCircle className="size-3.5" />
+      {t("Location mapping pending")}
+    </div>
+  );
 }
 
 export const NearbyKendras = () => {
-  const { t } = useTranslation();
-  const [activeRegion, setActiveRegion] = useState("all");
-  const [mapCenter, setMapCenter]       = useState<[number, number]>([76.5, 19.2]);
-  const [mapZoom, setMapZoom]           = useState(6.2);
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [distances, setDistances]       = useState<Record<number, number>>({});
-  const [locating, setLocating]         = useState(false);
+  const { t, translateBatch, language } = useTranslation();
+  
+  const [kvks, setKvks] = useState<any[]>([]);
+  const [activeState, setActiveState] = useState("Maharashtra");
+  const [activeDistrict, setActiveDistrict] = useState("All Districts");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const [mapCenter, setMapCenter] = useState<[number, number]>([76.5, 19.2]);
+  const [mapZoom, setMapZoom] = useState(6.2);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [selectedKvk, setSelectedKvk] = useState<any>(null);
 
-  const visibleKVKs =
-    activeRegion === "all" ? kvks : kvks.filter((k) => k.region === activeRegion);
-
-  const { translateBatch, language } = useTranslation();
-
-  // Dynamic translation for all KVK data
+  // Fetch KVKs from API when state changes
   useEffect(() => {
-    if (language === 'en') return;
+    async function fetchKvks() {
+      setLoading(true);
+      setError(false);
+      
+      const baseUrl = "/api/v1/kvks/?limit=100";
+      const filterUrl = activeState !== "All of India" ? `&state=${encodeURIComponent(activeState)}` : "";
+      
+      let allRecords: any[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+
+      try {
+        do {
+          const res = await safeFetchJson(`${baseUrl}${filterUrl}&page=${currentPage}`);
+          if (res.success && res.data) {
+            const payload = res.data;
+            if (payload.data && Array.isArray(payload.data)) {
+              allRecords = [...allRecords, ...payload.data];
+            }
+            totalPages = payload.pagination?.total_pages || 1;
+            currentPage++;
+          } else {
+            break;
+          }
+        } while (currentPage <= totalPages);
+        
+        const uniqueIds = new Set();
+        const uniqueRecords = [];
+        for (const record of allRecords) {
+          if (!uniqueIds.has(record.id)) {
+            uniqueIds.add(record.id);
+            uniqueRecords.push(record);
+          }
+        }
+        setKvks(uniqueRecords);
+        setActiveDistrict("All Districts");
+      } catch (err) {
+        console.error("Failed to fetch KVKs:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchKvks();
+  }, [activeState]);
+
+  // Derived state
+  const availableDistricts = useMemo(() => {
+    const dists = new Set<string>();
+    kvks.forEach(k => {
+      if (k.district) dists.add(k.district);
+    });
+    return ["All Districts", ...Array.from(dists).sort()];
+  }, [kvks]);
+
+  const filteredKvks = useMemo(() => {
+    let result = kvks;
+    
+    // District filter
+    if (activeDistrict !== "All Districts") {
+      result = result.filter(k => k.district === activeDistrict);
+    }
+    
+    // Search filter
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(k => 
+        (k.name && k.name.toLowerCase().includes(q)) ||
+        (k.district && k.district.toLowerCase().includes(q)) ||
+        (k.state && k.state.toLowerCase().includes(q)) ||
+        (k.address && k.address.toLowerCase().includes(q)) ||
+        (k.host_org && k.host_org.toLowerCase().includes(q))
+      );
+    }
+    
+    return result;
+  }, [kvks, activeDistrict, searchQuery]);
+
+  // Network Summary Stats
+  const stats = useMemo(() => {
+    const states = new Set<string>();
+    const districts = new Set<string>();
+    let exactLocations = 0;
+    
+    kvks.forEach(k => {
+      if (k.state) states.add(k.state);
+      if (k.district) districts.add(k.district);
+      if (k.latitude && k.longitude) exactLocations++;
+    });
+    
+    return {
+      total: kvks.length,
+      states: states.size,
+      districts: districts.size,
+      mapped: exactLocations
+    };
+  }, [kvks]);
+
+  // Translation hook
+  useEffect(() => {
+    if (language === 'en' || kvks.length === 0) return;
     
     const stringsToTranslate = new Set<string>();
     kvks.forEach(kvk => {
       stringsToTranslate.add(kvk.name);
-      stringsToTranslate.add(kvk.district);
-      stringsToTranslate.add(kvk.tests);
-      if (kvk.soilCost) stringsToTranslate.add(kvk.soilCost);
+      if (kvk.district) stringsToTranslate.add(kvk.district);
+      if (kvk.state) stringsToTranslate.add(kvk.state);
     });
-    
-    // Also include region labels
-    REGIONS.forEach(r => stringsToTranslate.add(r.label));
+    STATE_LIST.forEach(s => stringsToTranslate.add(s));
+    availableDistricts.forEach(d => stringsToTranslate.add(d));
     
     translateBatch(Array.from(stringsToTranslate));
-  }, [language, translateBatch]);
+  }, [language, translateBatch, kvks, availableDistricts]);
 
-  function handleRegionChange(regionKey: string) {
-    setActiveRegion(regionKey);
-    const view = REGION_VIEWS[regionKey];
-    setMapCenter(view.center);
-    setMapZoom(view.zoom);
+  function handleStateChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const newState = e.target.value;
+    setActiveState(newState);
+    if (newState === "All of India") {
+      setMapCenter([78.9629, 20.5937]);
+      setMapZoom(4.5);
+    } else if (newState === "Maharashtra") {
+      setMapCenter([76.5, 19.2]);
+      setMapZoom(6.2);
+    } else {
+      setMapCenter([78.9629, 20.5937]);
+      setMapZoom(5.5);
+    }
   }
-
-  function handleLocate() {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        setUserLocation({ lat, lng });
-        const dist: Record<number, number> = {};
-        kvks.forEach((k) => { dist[k.id] = getDistanceKm(lat, lng, k.lat, k.lng); });
-        setDistances(dist);
-        const nearest = kvks.reduce((a, b) => (dist[a.id] < dist[b.id] ? a : b));
-        setMapCenter([nearest.lng, nearest.lat]);
-        setMapZoom(11);
-        setActiveRegion("all");
-        setLocating(false);
-      },
-      () => {
-        alert("Could not get your location. Please allow location access.");
-        setLocating(false);
-      }
-    );
-  }
+  
+  const mapKVKs = filteredKvks.filter(k => k.latitude != null && k.longitude != null);
+  
+  const getDirectionsLink = (kvk: any) => {
+    if (kvk.latitude && kvk.longitude) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${kvk.latitude},${kvk.longitude}`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(kvk.name + ' ' + (kvk.address || `${kvk.district} ${kvk.state}`))}`;
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-7xl mx-auto px-6 py-20"
+      className="max-w-[1400px] mx-auto px-4 md:px-8 py-12 md:py-20"
     >
-      {/* Header */}
-      <header className="mb-16 text-center">
-        <h2 className="font-headline font-medium text-on-surface-variant tracking-widest uppercase text-sm mb-4">
-          {t("Maharashtra · ICAR Official Network")}
+      <header className="mb-12 text-center">
+        <h2 className="font-headline font-medium text-primary tracking-widest uppercase text-sm mb-4">
+          {t("KVK Explorer")}
         </h2>
-        <h1 className="font-headline font-black text-5xl md:text-7xl tracking-tighter mb-6 text-primary">
-          {t("Nearby Kendras")}
+        <h1 className="font-headline font-black text-4xl md:text-6xl tracking-tighter mb-4 text-on-surface">
+          {t("KVK Network")}
         </h1>
-        <p className="font-body text-on-surface-variant max-w-2xl mx-auto text-lg leading-relaxed mb-8">
-          {t("Find official government agricultural centres near you. Every KVK provides soil testing, expert guidance, and free farmer consultation.")}
+        <p className="font-body text-on-surface-variant max-w-2xl mx-auto text-lg leading-relaxed mb-10">
+          {t("Find agricultural support centres")}
         </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          {[
-            t("49 KVKs across Maharashtra"), 
-            t("Soil Testing available"), 
-            t("Free expert consultation")
-          ].map((s) => (
-            <span key={s} className="text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant border border-on-surface/5">
-              {s}
-            </span>
-          ))}
+        
+        {/* Network Summary */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+           <div className="bg-surface-container-lowest border border-on-surface/5 p-4 rounded-2xl flex flex-col items-center">
+             <span className="font-black text-3xl text-primary">{stats.total}</span>
+             <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mt-1">{t("KVKs found")}</span>
+           </div>
+           <div className="bg-surface-container-lowest border border-on-surface/5 p-4 rounded-2xl flex flex-col items-center">
+             <span className="font-black text-3xl text-primary">{stats.states}</span>
+             <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mt-1">{t("States / UTs")}</span>
+           </div>
+           <div className="bg-surface-container-lowest border border-on-surface/5 p-4 rounded-2xl flex flex-col items-center">
+             <span className="font-black text-3xl text-primary">{stats.districts}</span>
+             <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mt-1">{t("Districts identified")}</span>
+           </div>
+           <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex flex-col items-center">
+             <span className="font-black text-3xl text-emerald-600">{stats.mapped}</span>
+             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 mt-1 text-center leading-tight">{t("Exact locations mapped")}</span>
+           </div>
         </div>
       </header>
 
-      {/* Soil Testing Summary Banner */}
-      <section className="bg-surface-container-low p-6 md:p-8 rounded-2xl mb-12 flex flex-col md:flex-row items-center gap-6 border border-on-surface/5 hover:border-primary/10 transition-colors">
-        <div className="bg-primary/10 p-4 rounded-xl text-primary">
-          <FlaskConical className="size-8" />
+      {/* Filters */}
+      <div className="bg-surface-container-lowest p-4 md:p-6 rounded-3xl border border-on-surface/5 shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center">
+        <div className="w-full md:w-1/3 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-on-surface-variant/50" />
+          <input 
+            type="text" 
+            placeholder={t("Search KVK by name, district or address")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-12 bg-surface-container text-on-surface rounded-xl pl-12 pr-4 font-body focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
         </div>
-        <div className="flex-1 text-center md:text-left">
-          <h3 className="font-headline font-bold text-xl mb-1 text-primary">
-            {t("Soil Testing Available")}
-          </h3>
-          <p className="font-body text-on-surface-variant text-sm">
-            {t("Tests: pH · NPK · Organic Carbon · Micronutrients · Results in 3–7 days")}
-          </p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
-           <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary border border-primary/20">₹100–₹200 {t("per sample")}</span>
-        </div>
-      </section>
-
-      <div className="mb-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
-        <div className="overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar flex-grow">
-          <div className="flex flex-nowrap lg:flex-wrap items-center gap-3 min-w-max lg:min-w-0">
-            {REGIONS.map((r) => (
-              <button
-                key={r.key}
-                onClick={() => handleRegionChange(r.key)}
-                className={`text-xs font-bold px-5 py-2.5 rounded-full transition-all duration-300 border whitespace-nowrap ${
-                  activeRegion === r.key
-                    ? "bg-primary text-on-primary border-primary shadow-lg shadow-primary/20"
-                    : "bg-surface-container-lowest text-on-surface-variant border-on-surface/10 hover:border-primary/30"
-                }`}
-              >
-                {t(r.label)}
-              </button>
+        
+        <div className="w-full md:w-1/3">
+          <select 
+            value={activeState} 
+            onChange={handleStateChange}
+            className="w-full h-12 bg-surface-container text-on-surface rounded-xl px-4 font-body focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+          >
+            {STATE_LIST.map((stateName) => (
+              <option key={stateName} value={stateName}>
+                {t(stateName)}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
-        <Button
-          onClick={handleLocate}
-          disabled={locating}
-          className="bg-primary text-on-primary hover:opacity-90 rounded-full px-8 h-11 shadow-xl shadow-primary/10 gap-3 w-full sm:w-auto shrink-0 font-headline font-bold uppercase tracking-tight text-xs"
-        >
-          <Navigation className={`size-4 ${locating ? 'animate-pulse' : ''}`} />
-          {locating ? t("Locating...") : t("Find Nearest KVK")}
-        </Button>
+        <div className="w-full md:w-1/3">
+          <select 
+            value={activeDistrict} 
+            onChange={(e) => setActiveDistrict(e.target.value)}
+            disabled={activeState === "All of India"}
+            className="w-full h-12 bg-surface-container text-on-surface rounded-xl px-4 font-body focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
+          >
+            {availableDistricts.map((distName) => (
+              <option key={distName} value={distName}>
+                {t(distName)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-[380px_1fr] bg-surface-container-lowest rounded-3xl overflow-hidden border border-on-surface/5 shadow-2xl h-[800px] md:h-[700px] lg:h-[800px]">
-        <div className="flex flex-col h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r border-on-surface/5 bg-surface-container-lowest overflow-hidden order-2 lg:order-1">
-          <div className="p-6 border-b border-on-surface/5">
-            <h3 className="font-headline font-black text-xl flex items-center gap-2">
-              <span className="text-primary">{visibleKVKs.length}</span> {t("Kendras")} {t("found")}
-            </h3>
+      {/* Main Content Area */}
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_450px] gap-8 h-[800px]">
+        {/* Map Column */}
+        <div className="bg-surface-container-lowest rounded-3xl overflow-hidden border border-on-surface/5 shadow-xl relative order-2 lg:order-1 h-[500px] lg:h-full flex flex-col">
+          <div className="flex-1 relative">
+            <Map center={mapCenter} zoom={mapZoom}>
+              {mapKVKs.map((kvk) => (
+                <MapMarker key={kvk.id} longitude={kvk.longitude} latitude={kvk.latitude}>
+                  <MarkerPopup className="p-0 overflow-hidden min-w-[280px]">
+                    <div className="p-4 space-y-3 font-body">
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-primary block mb-1">
+                          {t("ICAR · Krishi Vigyan Kendra")}
+                        </span>
+                        <h3 className="font-headline font-black text-base leading-tight text-on-surface">{t(kvk.name)}</h3>
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+                          <Navigation className="size-3 text-primary" />
+                          {t(kvk.district)}, {t(kvk.state)}
+                        </div>
+                        <Button 
+                          onClick={() => setSelectedKvk(kvk)} 
+                          size="sm" 
+                          className="w-full bg-surface-container-low text-on-surface hover:bg-surface-container"
+                        >
+                          {t("View Details")}
+                        </Button>
+                    </div>
+                  </MarkerPopup>
+                </MapMarker>
+              ))}
+            </Map>
+            <div className="absolute bottom-4 left-4 right-4 bg-background/95 backdrop-blur border border-on-surface/10 p-3 rounded-xl shadow-lg flex gap-3 items-start">
+               <Info className="size-5 text-primary shrink-0 mt-0.5" />
+               <p className="text-xs font-medium text-on-surface leading-relaxed">
+                 {t("Map markers show KVKs with verified exact locations.")} {t("Other KVKs remain searchable using their official address.")}
+               </p>
+            </div>
           </div>
-          <div className="flex-grow overflow-y-auto p-4 space-y-4 no-scrollbar">
-            {visibleKVKs.map((kvk) => (
-              <div
-                key={kvk.id}
-                onClick={() => { setMapCenter([kvk.lng, kvk.lat]); setMapZoom(11); }}
-                className="group p-5 rounded-2xl border bg-surface-container-lowest border-on-surface/5 hover:border-primary/30 transition-all duration-300 cursor-pointer"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-headline font-bold text-lg leading-tight group-hover:text-primary transition-colors pr-4">
-                    {t(kvk.name)}
-                  </h3>
-                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded bg-primary/5 text-primary">
-                    {t("KVK")}
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium mb-4">
-                  <div className="p-1 rounded-md bg-surface-container-low">
-                    <Navigation className="size-3" />
+        </div>
+
+        {/* Results Column */}
+        <div className="bg-surface-container-lowest rounded-3xl overflow-hidden border border-on-surface/5 shadow-xl flex flex-col order-1 lg:order-2 h-[600px] lg:h-full">
+           <div className="p-5 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-lowest z-10 shrink-0">
+              <h3 className="font-headline font-bold text-lg text-on-surface">
+                {filteredKvks.length} {t("KVKs found")}
+              </h3>
+              {loading && <Loader2 className="size-5 animate-spin text-primary" />}
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-4 space-y-4">
+             {error ? (
+               <div className="text-center p-8 text-on-surface-variant">
+                 <AlertCircle className="size-8 mx-auto mb-3 opacity-50" />
+                 <p>{t("We couldn't load KVK information right now")}</p>
+               </div>
+             ) : loading && kvks.length === 0 ? (
+               <div className="text-center p-8 text-on-surface-variant">
+                 <Loader2 className="size-8 mx-auto mb-3 animate-spin text-primary" />
+                 <p>{t("Finding Krishi Vigyan Kendras...")}</p>
+               </div>
+             ) : filteredKvks.length === 0 ? (
+               <div className="text-center p-8 text-on-surface-variant">
+                 <Search className="size-8 mx-auto mb-3 opacity-30" />
+                 <p>{t("No KVKs found")}</p>
+               </div>
+             ) : (
+               filteredKvks.map(kvk => (
+                 <div key={kvk.id} className="p-5 rounded-2xl border border-on-surface/5 bg-background hover:border-primary/20 transition-all flex flex-col gap-4">
+                    <div>
+                      <div className="flex justify-between items-start mb-2 gap-3">
+                        <h4 className="font-headline font-bold text-base leading-tight text-on-surface">
+                          {t(kvk.name)}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant font-medium">
+                        <MapPin className="size-3.5" />
+                        {t(kvk.district)}, {t(kvk.state)}
+                      </div>
+                    </div>
+                    
+                    <LocationStatusBadge kvk={kvk} />
+                    
+                    <div className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+                      {kvk.address}
+                    </div>
+
+                    <div className="flex gap-2 mt-2">
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="flex-1 text-xs font-bold"
+                         onClick={() => setSelectedKvk(kvk)}
+                       >
+                         {t("View Details")}
+                       </Button>
+                       <a
+                          href={getDirectionsLink(kvk)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex-1"
+                        >
+                          <Button size="sm" className="w-full bg-primary text-on-primary font-bold text-xs gap-1.5">
+                            <Navigation className="size-3.5" />
+                            {t("Get Directions")}
+                          </Button>
+                        </a>
+                    </div>
+                 </div>
+               ))
+             )}
+           </div>
+        </div>
+      </div>
+
+      {/* Details Modal */}
+      <AnimatePresence>
+        {selectedKvk && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedKvk(null)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative bg-surface-container-lowest w-full max-w-2xl rounded-3xl shadow-2xl border border-on-surface/10 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-on-surface/5 flex justify-between items-start bg-surface-container-low">
+                <div>
+                  <h2 className="font-headline font-black text-2xl text-on-surface mb-2">{t(selectedKvk.name)}</h2>
+                  <div className="flex items-center gap-2 text-sm text-on-surface-variant font-medium">
+                    <MapPin className="size-4" />
+                    {t(selectedKvk.district)}, {t(selectedKvk.state)}
                   </div>
-                  <span>{t(kvk.district)} {t("District")}</span>
-                  {distances[kvk.id] && (
-                    <span className="ml-auto font-bold text-primary">
-                      {distances[kvk.id].toFixed(1)} km
-                    </span>
+                </div>
+                <button onClick={() => setSelectedKvk(null)} className="p-2 bg-background rounded-full hover:bg-surface-container transition-colors">
+                  <X className="size-5 text-on-surface-variant" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto font-body space-y-6">
+                <LocationStatusBadge kvk={selectedKvk} />
+                
+                {selectedKvk.address && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 flex items-center gap-2"><MapPin className="size-4"/> {t("Address")}</h4>
+                    <p className="text-on-surface bg-surface-container-low p-4 rounded-xl leading-relaxed">{selectedKvk.address}</p>
+                  </div>
+                )}
+                
+                {selectedKvk.host_org && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 flex items-center gap-2"><Building className="size-4"/> {t("Host organization")}</h4>
+                    <div className="bg-surface-container-low p-4 rounded-xl">
+                      <p className="text-on-surface font-medium">{selectedKvk.host_org}</p>
+                      {selectedKvk.host_type && (
+                        <p className="text-xs text-on-surface-variant mt-1">{t("Host type")}: {selectedKvk.host_type}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedKvk.phone && (
+                    <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl">
+                      <Phone className="size-5 text-primary" />
+                      <div>
+                        <span className="text-xs text-on-surface-variant block mb-0.5">Phone</span>
+                        <a href={`tel:${selectedKvk.phone}`} className="font-medium hover:text-primary transition-colors">{selectedKvk.phone}</a>
+                      </div>
+                    </div>
+                  )}
+                  {selectedKvk.email && (
+                    <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl">
+                      <Mail className="size-5 text-primary" />
+                      <div>
+                        <span className="text-xs text-on-surface-variant block mb-0.5">Email</span>
+                        <a href={`mailto:${selectedKvk.email}`} className="font-medium hover:text-primary transition-colors">{selectedKvk.email}</a>
+                      </div>
+                    </div>
+                  )}
+                  {selectedKvk.year_established && (
+                    <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl">
+                      <Info className="size-5 text-primary" />
+                      <div>
+                        <span className="text-xs text-on-surface-variant block mb-0.5">{t("Year established")}</span>
+                        <span className="font-medium">{selectedKvk.year_established}</span>
+                      </div>
+                    </div>
                   )}
                 </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-on-surface/5">
-                  <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-on-surface-variant/80">
-                    <Phone className="size-3" />
-                    {kvk.phone}
-                  </div>
-                  <a
-                    href={`https://maps.google.com/?q=${kvk.lat},${kvk.lng}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary hover:underline"
-                  >
-                    {t("Directions")}
-                    <ExternalLink className="size-3" />
-                  </a>
-                </div>
               </div>
-            ))}
+
+              <div className="p-6 border-t border-on-surface/5 bg-surface-container-low flex flex-wrap gap-3">
+                {selectedKvk.latitude && selectedKvk.longitude && (
+                  <Button 
+                    onClick={() => {
+                      setMapCenter([selectedKvk.longitude, selectedKvk.latitude]);
+                      setMapZoom(13);
+                      setSelectedKvk(null);
+                    }}
+                    className="bg-primary text-on-primary"
+                  >
+                    <MapPin className="size-4 mr-2" />
+                    {t("Show on Map")}
+                  </Button>
+                )}
+                
+                <a href={getDirectionsLink(selectedKvk)} target="_blank" rel="noreferrer">
+                  <Button variant="outline" className="bg-background border-on-surface/10 hover:bg-surface-container">
+                    <Navigation className="size-4 mr-2" />
+                    {t("Get Directions")}
+                  </Button>
+                </a>
+                
+                {selectedKvk.url && (
+                  <a href={selectedKvk.url} target="_blank" rel="noreferrer" className="ml-auto">
+                    <Button variant="ghost" className="text-primary hover:bg-primary/10">
+                      <Globe className="size-4 mr-2" />
+                      {t("Official Website")}
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </motion.div>
           </div>
-        </div>
-
-        <div className="relative h-1/2 lg:h-full order-1 lg:order-2">
-          <Map center={mapCenter} zoom={mapZoom}>
-            {userLocation && (
-              <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
-                <MarkerPopup className="p-0 overflow-hidden">
-                   <div className="bg-primary text-on-primary p-2 px-4 font-headline font-bold text-xs uppercase tracking-widest text-center">
-                    {t("You")}
-                  </div>
-                </MarkerPopup>
-              </MapMarker>
-            )}
-
-            {visibleKVKs.map((kvk) => (
-              <MapMarker key={kvk.id} longitude={kvk.lng} latitude={kvk.lat}>
-                <MarkerPopup className="p-0 overflow-hidden min-w-[280px]">
-                  <div className="p-5 space-y-4 font-body">
-                    <div>
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary/70 block mb-1">
-                        {t("ICAR · Krishi Vigyan Kendra")}
-                      </span>
-                      <h3 className="font-headline font-black text-lg leading-tight text-on-surface">{t(kvk.name)}</h3>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-on-surface-variant mt-1">
-                        <Navigation className="size-3 text-primary" />
-                        {t(kvk.district)} {t("District")}
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-surface-container-low rounded-xl border border-on-surface/5 space-y-2">
-                       <p className="text-[11px] font-bold text-primary flex items-center gap-2">
-                        <FlaskConical className="size-3.5" />
-                        {t("Soil Testing Available")}
-                      </p>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                         <div className="bg-background p-2 rounded-lg text-center">
-                            <span className="text-[9px] block uppercase tracking-widest opacity-50 mb-0.5">{t("Cost")}</span>
-                            <span className="text-xs font-bold text-primary">{t(kvk.soilCost)}</span>
-                         </div>
-                         <div className="bg-background p-2 rounded-lg text-center">
-                            <span className="text-[9px] block uppercase tracking-widest opacity-50 mb-0.5">{t("Time")}</span>
-                            <span className="text-xs font-bold text-primary">3-7 {t("Days")}</span>
-                         </div>
-                      </div>
-                    </div>
-
-                    {kvk.mobileLab && (
-                      <div className="flex items-center gap-2 p-2 px-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-amber-500/20">
-                        <Truck className="size-4" />
-                        {t("Mobile Lab Services")}
-                      </div>
-                    )}
-
-                    <div className="pt-4 flex items-center gap-3">
-                      <a
-                        href={`https://maps.google.com/?q=${kvk.lat},${kvk.lng}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1"
-                      >
-                        <Button size="sm" className="w-full bg-primary text-on-primary font-headline font-bold uppercase tracking-tighter text-xs h-10 rounded-full gap-2">
-                          <Navigation className="size-3" />
-                          {t("Directions")}
-                        </Button>
-                      </a>
-                      <a href={`tel:${kvk.phone}`} className="h-10 w-10 flex items-center justify-center rounded-full border border-on-surface/10 hover:bg-surface-container transition-colors text-on-surface-variant">
-                         <Phone className="size-4" />
-                      </a>
-                    </div>
-                  </div>
-                </MarkerPopup>
-              </MapMarker>
-            ))}
-          </Map>
-        </div>
-      </div>
-
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

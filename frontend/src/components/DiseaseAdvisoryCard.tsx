@@ -15,7 +15,18 @@ export interface DiseaseAdvisory {
   cautions: string[];
 }
 
-export const DiseaseAdvisoryCard: React.FC<{ advisory: DiseaseAdvisory }> = ({ advisory }) => {
+export interface VisionAdvisory {
+  assessment_type: string;
+  possible_condition: string;
+  confidence_level: string;
+  visual_evidence: string;
+  uncertainty_disclaimer: string;
+  recommended_next_step: string;
+}
+
+export type DiseaseAdvisoryResponse = DiseaseAdvisory | VisionAdvisory;
+
+export const DiseaseAdvisoryCard: React.FC<{ advisory: DiseaseAdvisoryResponse }> = ({ advisory }) => {
   const { t } = useTranslation();
 
   return (
@@ -24,16 +35,63 @@ export const DiseaseAdvisoryCard: React.FC<{ advisory: DiseaseAdvisory }> = ({ a
       animate={{ opacity: 1, y: 0 }}
       className="mt-8 bg-surface-container-lowest border border-primary/20 rounded-3xl p-6 md:p-10 max-w-4xl w-full text-left"
     >
-      <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-6 flex items-center gap-3">
-        <Sprout className="w-8 h-8" />
-        {t("AI Disease Advisory")}
-      </h3>
-      
-      <div className="space-y-6">
-        <div className="bg-primary/5 p-4 rounded-2xl">
-          <h4 className="font-headline font-bold text-lg mb-2 text-primary">{t("Summary")}</h4>
-          <p className="font-body text-on-surface-variant leading-relaxed">{advisory.summary}</p>
-        </div>
+      {'assessment_type' in advisory ? (
+        <>
+          <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-6 flex items-center gap-3">
+            <Sprout className="w-8 h-8" />
+            {t("AI-Assisted Visual Assessment")}
+          </h3>
+
+          <div className="space-y-6">
+            <div className="bg-error/10 border border-error/20 p-4 rounded-2xl">
+              <h4 className="font-headline font-bold text-lg mb-2 text-error flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-error" />
+                {t("Uncertainty Disclaimer")}
+              </h4>
+              <p className="font-body text-error font-medium leading-relaxed">{advisory.uncertainty_disclaimer}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-surface-container p-4 rounded-2xl">
+                <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Possible Condition")}</h4>
+                <p className="font-body text-primary font-bold text-xl">{advisory.possible_condition}</p>
+              </div>
+
+              <div className="bg-surface-container p-4 rounded-2xl">
+                <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("Confidence Level")}</h4>
+                <p className="font-body text-on-surface-variant font-medium text-lg">{advisory.confidence_level}</p>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-low p-4 rounded-2xl">
+              <h4 className="font-headline font-bold text-lg mb-2 text-on-surface flex items-center gap-2">
+                <Info className="w-5 h-5 text-primary" />
+                {t("Visual Evidence")}
+              </h4>
+              <p className="font-body text-on-surface-variant leading-relaxed">{advisory.visual_evidence}</p>
+            </div>
+
+            <div className="bg-surface-container-highest p-4 rounded-2xl">
+              <h4 className="font-headline font-bold text-lg mb-2 text-on-surface flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                {t("Recommended Next Step")}
+              </h4>
+              <p className="font-body text-on-surface-variant leading-relaxed">{advisory.recommended_next_step}</p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-6 flex items-center gap-3">
+            <Sprout className="w-8 h-8" />
+            {t("AI Disease Advisory")}
+          </h3>
+
+          <div className="space-y-6">
+            <div className="bg-primary/5 p-4 rounded-2xl">
+              <h4 className="font-headline font-bold text-lg mb-2 text-primary">{t("Summary")}</h4>
+              <p className="font-body text-on-surface-variant leading-relaxed">{advisory.summary}</p>
+            </div>
 
         <div>
           <h4 className="font-headline font-bold text-lg mb-2 text-on-surface">{t("What This Means")}</h4>
@@ -132,6 +190,8 @@ export const DiseaseAdvisoryCard: React.FC<{ advisory: DiseaseAdvisory }> = ({ a
           </div>
         )}
       </div>
+    </>
+  )}
     </motion.div>
   );
 };

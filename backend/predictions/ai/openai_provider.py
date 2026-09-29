@@ -127,3 +127,73 @@ class OpenAIProvider(AIProvider):
         except Exception as e:
             logger.error(f"OpenAI unexpected error: {e}")
             raise PermanentAIError(f"OpenAI unexpected error: {e}") from e
+
+    def generate_vision_content(
+        self,
+        prompt_text: str,
+        image_bytes: bytes,
+        mime_type: str,
+        system_instruction: str,
+        response_schema: Dict[str, Any],
+        temperature: float = 0.2
+    ) -> Dict[str, Any]:
+        import base64
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise AIConfigurationError("OPENAI_API_KEY is not configured.")
+
+        client = OpenAI(api_key=api_key)
+
+        openai_schema = adapt_schema_for_openai(response_schema)
+
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "vision_advisory_response",
+                "schema": openai_schema,
+                "strict": True
+            }
+        }
+
+        try:
+            b64_image = base64.b64encode(image_bytes).decode('utf-8')
+            image_url = f"data:{mime_type};base64,{b64_image}"
+
+            response = client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt_text},
+                        {"type": "image_url", "image_url": {"url": image_url}}
+                    ]}
+                ],
+                response_format=response_format,
+                temperature=temperature
+            )
+
+            content = response.choices[0].message.content
+            advisory_data = json.loads(content)
+            return advisory_data
+
+        except openai.RateLimitError as e:
+            logger.warning(f"OpenAI Vision RateLimitError: {e}")
+            raise TransientAIError(f"OpenAI vision rate limit: {e}") from e
+        except openai.APIConnectionError as e:
+            logger.warning(f"OpenAI Vision APIConnectionError: {e}")
+            raise TransientAIError(f"OpenAI vision connection error: {e}") from e
+        except openai.InternalServerError as e:
+            logger.warning(f"OpenAI Vision InternalServerError: {e}")
+            raise TransientAIError(f"OpenAI vision server error: {e}") from e
+        except openai.AuthenticationError as e:
+            logger.error(f"OpenAI Vision AuthenticationError: {e}")
+            raise PermanentAIError(f"OpenAI vision auth error: {e}") from e
+        except openai.BadRequestError as e:
+            logger.error(f"OpenAI Vision BadRequestError: {e}")
+            raise PermanentAIError(f"OpenAI vision bad request: {e}") from e
+        except json.JSONDecodeError as e:
+            logger.error(f"OpenAI Vision returned invalid JSON: {e}")
+            raise TransientAIError(f"OpenAI vision returned malformed data: {e}") from e
+        except Exception as e:
+            logger.error(f"OpenAI Vision unexpected error: {e}")
+            raise PermanentAIError(f"OpenAI vision unexpected error: {e}") from e

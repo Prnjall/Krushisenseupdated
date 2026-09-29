@@ -58,12 +58,14 @@ export interface SoilData {
 
 export interface PredictionResult {
   label: string;
-  region: string;
+  region?: string;
   district?: string;
   soil_color?: string;
   fertilizer?: string;
   score?: number;
   confidence?: number;
+  regenerative_reasons?: string[];
+  estimated_yield?: number;
 }
 
 // Simple CSV parser to handle dataset loading
@@ -122,6 +124,7 @@ function calculatePredictCrop(data: SoilData, allRows: any[]): PredictionResult[
 }
 import { useTranslation } from '../contexts/LanguageContext';
 import { safeFetchJson } from '../lib/api';
+import { InteroperabilityPanel } from './InteroperabilityPanel';
 
 export const PredictCrop: React.FC = () => {
   const { t, language, translateBatch } = useTranslation();
@@ -273,7 +276,9 @@ export const PredictCrop: React.FC = () => {
           primary_crop: recommendations[0]?.label,
           top3: recommendations.map(r => ({ crop: r.label, prob: r.confidence })),
           familiarity: "high", // simplified for frontend state
-          prediction_status: "high_confidence" // simplified for frontend state
+          prediction_status: "high_confidence", // simplified for frontend state
+          estimated_yield: recommendations[0]?.estimated_yield,
+          regenerative_signals: recommendations[0]?.regenerative_reasons
         }
       };
       const { success, data, error, errorType } = await safeFetchJson('/api/agri-advisory', {
@@ -521,16 +526,44 @@ export const PredictCrop: React.FC = () => {
       setErrorMsg(t('Please enter all soil data fields before predicting.'));
       return;
     }
-    if (allRows.length === 0) {
-      setErrorMsg(t('Dataset still loading, please wait a moment.'));
-      return;
-    }
     setErrorMsg(null);
     setLoading(true);
     try {
-      // Simulate minimal delay for UI feel
-      await new Promise(res => setTimeout(res, 600));
-      const recs = calculatePredictCrop(formData, allRows);
+      const payload = {
+        nitrogen: formData.n,
+        phosphorus: formData.p,
+        potassium: formData.k,
+        ph: formData.ph,
+        temperature: formData.temp,
+        humidity: formData.humidity,
+        rainfall: formData.rainfall,
+        weather_current: weatherData ? { temperature: weatherData.temp, precipitation: weatherData.precip } : {},
+        weather_forecast: weatherForecast ? { 
+          status: "AVAILABLE", 
+          forecast: weatherForecast,
+          risk_signals: weatherRiskSignals 
+        } : { status: "UNAVAILABLE" },
+        satellite: satelliteData ? { status: "AVAILABLE", ndvi: satelliteData.ndvi } : { status: "UNAVAILABLE" },
+      };
+
+      const { success, data, error } = await safeFetchJson('/api/predict-crop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!success) {
+        throw new Error(error || t('Prediction failed'));
+      }
+
+      // Map backend response back to PredictionResult format
+      const recs: PredictionResult[] = data.regenerative_ranking.map((r: any) => ({
+        label: r.crop,
+        confidence: r.final_score * 100,
+        score: r.final_score,
+        regenerative_reasons: r.regenerative_reasons,
+        estimated_yield: data.estimated_yield
+      }));
       setRecommendations(recs);
     } catch (error) {
       setErrorMsg(t('Prediction failed') + ': ' + (error as Error).message);
@@ -955,6 +988,18 @@ export const PredictCrop: React.FC = () => {
           )}
         </section>
       )}
+
+      {recommendations && (
+        <InteroperabilityPanel
+          language={language}
+          locationQuery={locationQuery}
+          formData={formData}
+          weatherData={weatherData}
+          weatherForecast={weatherForecast}
+          satelliteData={satelliteData}
+          recommendations={recommendations}
+        />
+      )}
     </motion.div>
   );
 };
@@ -1066,6 +1111,25 @@ const ResultCard: React.FC<{ result: PredictionResult; label: string; name: stri
         </div>
       )}
 
+      {result.estimated_yield && (
+        <div className="mt-4 px-2 text-left w-full">
+          <p className="font-bold text-xs flex items-center gap-2 text-on-surface/90">
+             {t('Estimated Yield Index')}: <span className="text-primary">{result.estimated_yield.toFixed(2)}</span>
+          </p>
+        </div>
+      )}
+
+      {result.regenerative_reasons && result.regenerative_reasons.length > 0 && (
+        <div className="mt-2 px-2 text-left w-full border-l-2 border-primary/50 pl-2">
+          <p className="font-bold text-[10px] text-primary uppercase tracking-wide mb-1">{t('Regenerative Heuristic (N/Rainfall)')}</p>
+          <ul className="list-disc pl-3 text-[10px] text-on-surface-variant space-y-0.5">
+            {result.regenerative_reasons.map((r, i) => (
+              <li key={i}>{t(r)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-6 flex items-center text-on-surface-variant font-bold text-xs justify-center gap-2 py-2 px-4 bg-surface-container-low rounded-full">
         <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
         {reason} {result.confidence ? `${result.confidence.toFixed(1)}%` : ''}
@@ -1076,7 +1140,7 @@ const ResultCard: React.FC<{ result: PredictionResult; label: string; name: stri
       </div>
 
       <p className="mt-8 text-[9px] text-on-surface-variant/30 font-medium tracking-tight">
-        * {t('Based on similar agricultural conditions from real dataset')}
+        * {t('Advisory estimates based on ML models and heuristic rules.')}
       </p>
     </div>
   );

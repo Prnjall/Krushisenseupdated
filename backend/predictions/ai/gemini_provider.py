@@ -79,3 +79,55 @@ class GeminiProvider(AIProvider):
             # Default to permanent error for unknown exceptions to prevent fallback loops
             logger.error(f"Gemini unexpected error: {e}")
             raise PermanentAIError(f"Gemini unexpected error: {e}") from e
+
+    def generate_vision_content(
+        self,
+        prompt_text: str,
+        image_bytes: bytes,
+        mime_type: str,
+        system_instruction: str,
+        response_schema: Dict[str, Any],
+        temperature: float = 0.2
+    ) -> Dict[str, Any]:
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise AIConfigurationError("GEMINI_API_KEY is not configured.")
+
+        client = genai.Client(api_key=api_key)
+
+        try:
+            image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+            response = generate_content_with_retry(
+                client=client,
+                model=self._model,
+                contents=[image_part, prompt_text],
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                    response_schema=response_schema,
+                    temperature=temperature,
+                ),
+            )
+
+            advisory_data = json.loads(response.text)
+            return advisory_data
+
+        except ServerError as e:
+            logger.warning(f"Gemini Vision ServerError: {e}")
+            raise TransientAIError(f"Gemini vision service unavailable: {e}") from e
+        except ClientError as e:
+            if getattr(e, 'code', None) == 429:
+                logger.warning(f"Gemini Vision quota exhausted (429): {e}")
+                raise TransientAIError(f"Gemini vision quota exhausted: {e}") from e
+            logger.error(f"Gemini Vision ClientError: {e}")
+            raise PermanentAIError(f"Gemini vision client error: {e}") from e
+        except json.JSONDecodeError as e:
+            logger.error(f"Gemini Vision returned invalid JSON: {e}")
+            raise TransientAIError(f"Gemini vision returned malformed data: {e}") from e
+        except Exception as e:
+            error_str = str(e).lower()
+            if "timeout" in error_str or "connection" in error_str:
+                logger.warning(f"Gemini Vision connection issue: {e}")
+                raise TransientAIError(f"Gemini vision connection failed: {e}") from e
+            logger.error(f"Gemini Vision unexpected error: {e}")
+            raise PermanentAIError(f"Gemini vision unexpected error: {e}") from e

@@ -87,6 +87,8 @@ class CropPredictionSchema(BaseModel):
     prediction_status: str
     data_familiarity: str
     model_version: Optional[str] = None
+    estimated_yield: Optional[float] = None
+    regenerative_signals: Optional[List[str]] = Field(default_factory=list)
 
     @field_validator('confidence')
     @classmethod
@@ -132,3 +134,12 @@ class AgriculturalObservation(BaseModel):
     crop_prediction: Optional[CropPredictionSchema] = None
     disease_screening: Optional[DiseaseScreeningSchema] = None
     provenance: List[ProvenanceSchema] = []
+
+class VisionAdvisorySchema(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    assessment_type: Literal["AI-Assisted Visual Assessment"]
+    possible_condition: str = Field(description="The most likely condition, or 'Unidentified'")
+    confidence_level: Literal["Low", "Moderate", "High"]
+    visual_evidence: str = Field(description="Description of visible lesions, spots, discoloration, patterns, etc.")
+    uncertainty_disclaimer: str = Field(description="Explicitly communicate that this is NOT a confirmed diagnosis")
+    recommended_next_step: str = Field(description="Actionable but conservative advice")

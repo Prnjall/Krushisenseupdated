@@ -80,6 +80,10 @@ def build_interop_prompt(obs: AgriculturalObservation) -> str:
         prompt += f"Status: {obs.crop_prediction.prediction_status}\n"
         if obs.crop_prediction.model_version:
             prompt += f"Model Version: {obs.crop_prediction.model_version}\n"
+        if obs.crop_prediction.estimated_yield is not None:
+            prompt += f"Estimated Yield Index: {obs.crop_prediction.estimated_yield}\n"
+        if obs.crop_prediction.regenerative_signals:
+            prompt += f"Regenerative Signals: {', '.join(obs.crop_prediction.regenerative_signals)}\n"
         if False:
             prompt += f"Provenance: {obs.crop_prediction.source}\n"
         prompt += "\n"

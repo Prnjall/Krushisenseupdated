@@ -165,3 +165,131 @@ class TestAIOrchestrator(unittest.TestCase):
         # OpenAI requires ALL properties to be required
         self.assertIn("field1", openai_schema["required"])
         self.assertIn("field2", openai_schema["required"])
+
+
+    # --- Vision Fallback Tests ---
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
+    def test_vision_gemini_success(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        mock_response = MagicMock()
+        mock_response.text = '{"summary": "Test vision summary"}'
+        mock_gemini_generate.return_value = mock_response
+
+        orchestrator = AIOrchestrator()
+        advisory, metadata = orchestrator.generate_vision_advisory_with_fallback(
+            prompt_text="test", image_bytes=b"dummy", mime_type="image/jpeg", system_instruction="test", response_schema=self.response_schema
+        )
+
+        self.assertEqual(advisory["summary"], "Test vision summary")
+        self.assertEqual(metadata["provider"], "Google Gemini")
+        mock_gemini_generate.assert_called_once()
+        mock_openai.assert_not_called()
+
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
+    def test_vision_gemini_429_fallback_to_openai(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        with patch('predictions.ai.gemini_provider.ClientError', DummyClientError):
+            mock_gemini_generate.side_effect = DummyClientError(429)
+
+            mock_openai_client = MagicMock()
+            mock_chat_response = MagicMock()
+            mock_chat_response.choices[0].message.content = '{"summary": "OpenAI vision summary"}'
+            mock_openai_client.chat.completions.create.return_value = mock_chat_response
+            mock_openai.return_value = mock_openai_client
+
+            orchestrator = AIOrchestrator()
+            advisory, metadata = orchestrator.generate_vision_advisory_with_fallback(
+                prompt_text="test", image_bytes=b"dummy", mime_type="image/jpeg", system_instruction="test", response_schema=self.response_schema
+            )
+
+            self.assertEqual(advisory["summary"], "OpenAI vision summary")
+            self.assertEqual(metadata["provider"], "OpenAI")
+            mock_gemini_generate.assert_called_once()
+            mock_openai.assert_called_once()
+
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
+    def test_vision_gemini_503_fallback_to_openai(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        with patch('predictions.ai.gemini_provider.ServerError', DummyServerError):
+            mock_gemini_generate.side_effect = DummyServerError(503)
+
+            mock_openai_client = MagicMock()
+            mock_chat_response = MagicMock()
+            mock_chat_response.choices[0].message.content = '{"summary": "OpenAI vision summary"}'
+            mock_openai_client.chat.completions.create.return_value = mock_chat_response
+            mock_openai.return_value = mock_openai_client
+
+            orchestrator = AIOrchestrator()
+            advisory, metadata = orchestrator.generate_vision_advisory_with_fallback(
+                prompt_text="test", image_bytes=b"dummy", mime_type="image/jpeg", system_instruction="test", response_schema=self.response_schema
+            )
+
+            self.assertEqual(advisory["summary"], "OpenAI vision summary")
+            self.assertEqual(metadata["provider"], "OpenAI")
+            mock_gemini_generate.assert_called_once()
+            mock_openai.assert_called_once()
+
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
+    def test_vision_gemini_permanent_error(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        with patch('predictions.ai.gemini_provider.ClientError', DummyClientError):
+            mock_gemini_generate.side_effect = DummyClientError(400)
+
+            orchestrator = AIOrchestrator()
+            with self.assertRaises(PermanentAIError):
+                orchestrator.generate_vision_advisory_with_fallback(
+                    prompt_text="test", image_bytes=b"dummy", mime_type="image/jpeg", system_instruction="test", response_schema=self.response_schema
+                )
+
+            mock_gemini_generate.assert_called_once()
+            mock_openai.assert_not_called()
+
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
+    def test_vision_both_providers_fail_transient(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        with patch('predictions.ai.gemini_provider.ServerError', DummyServerError):
+            mock_gemini_generate.side_effect = DummyServerError(503)
+
+            mock_openai_client = MagicMock()
+            mock_openai_client.chat.completions.create.side_effect = openai.InternalServerError("500", response=MagicMock(), body=None)
+            mock_openai.return_value = mock_openai_client
+
+            orchestrator = AIOrchestrator()
+            with self.assertRaises(TransientAIError):
+                orchestrator.generate_vision_advisory_with_fallback(
+                    prompt_text="test", image_bytes=b"dummy", mime_type="image/jpeg", system_instruction="test", response_schema=self.response_schema
+                )
+
+    @patch("predictions.ai.gemini_provider.generate_content_with_retry")
+    @patch("predictions.ai.openai_provider.OpenAI")
+    @patch("os.getenv")
+    def test_vision_both_providers_fail_permanent(self, mock_getenv, mock_openai, mock_gemini_generate):
+        mock_getenv.side_effect = lambda key, default=None: "dummy_key" if "API_KEY" in key else default
+
+        with patch('predictions.ai.gemini_provider.ServerError', DummyServerError):
+            mock_gemini_generate.side_effect = DummyServerError(503)
+
+            mock_openai_client = MagicMock()
+            mock_openai_client.chat.completions.create.side_effect = openai.BadRequestError("400", response=MagicMock(), body=None)
+            mock_openai.return_value = mock_openai_client
+
+            orchestrator = AIOrchestrator()
+            with self.assertRaises(PermanentAIError):
+                orchestrator.generate_vision_advisory_with_fallback(
+                    prompt_text="test", image_bytes=b"dummy", mime_type="image/jpeg", system_instruction="test", response_schema=self.response_schema
+                )

@@ -182,7 +182,7 @@ def get_ndvi_statistics(lat, lon, date_str):
     resp = requests.post(stat_url, json=payload, headers=headers, timeout=15)
     resp.raise_for_status()
     data = resp.json()
-    print("STATS RESPONSE:", data)
+    logger.debug("STATS RESPONSE: %s", data)
     
     # Parse mean NDVI from the response
     intervals = data.get("data", [])

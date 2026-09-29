@@ -39,7 +39,7 @@ def load_model(path):
     try:
         return joblib.load(path)
     except Exception as e:
-        print("Model load error:", e)
+        logger.error("Model load error: %s", e)
         return None
 
 
@@ -53,13 +53,13 @@ if scaler is not None and x_train_path.exists():
         X_train_scaled = np.load(x_train_path)
         nn_model = NearestNeighbors(n_neighbors=5)
         nn_model.fit(X_train_scaled)
-        print("NearestNeighbors model fitted successfully.")
+        logger.info("NearestNeighbors model fitted successfully.")
     except Exception as e:
-        print("Error fitting NearestNeighbors model:", e)
+        logger.error("Error fitting NearestNeighbors model: %s", e)
 
-print("Crop model loaded:", crop_recommendation_model is not None)
-print("Yield model loaded:", yield_prediction_model is not None)
-print("Scaler loaded:", scaler is not None)
+logger.info("Crop model loaded: %s", crop_recommendation_model is not None)
+logger.info("Yield model loaded: %s", yield_prediction_model is not None)
+logger.info("Scaler loaded: %s", scaler is not None)
 
 
 # ==============================
@@ -81,15 +81,36 @@ def predict_crop_view(request):
             "error": "Invalid request data"
         }, status=400)
 
-    print(f"Received input: {data}")
+    logger.debug("Received prediction input.")
     required_fields = ["nitrogen", "phosphorus", "potassium", "temperature", "humidity", "ph", "rainfall"]
     for field in required_fields:
         if field not in data:
-            print(f"Missing field: {field}")
+            logger.warning("Missing field: %s", field)
             return JsonResponse({
                 "success": False,
                 "error": f"Missing field: {field}"
             }, status=400)
+    
+    # Optional contexts for regenerative scoring
+    weather_current = data.get("weather_current", {})
+    weather_forecast = data.get("weather_forecast", {})
+    satellite = data.get("satellite", {})
+    
+    if not isinstance(weather_current, dict): weather_current = {}
+    if not isinstance(weather_forecast, dict): weather_forecast = {}
+    if not isinstance(satellite, dict): satellite = {}
+    
+    risk_signals = weather_forecast.get("risk_signals", [])
+    if not isinstance(risk_signals, list): risk_signals = []
+    
+    weather_context = {
+        "current": weather_current,
+        "forecast": weather_forecast.get("forecast", []) if isinstance(weather_forecast.get("forecast"), list) else [],
+        "risk_signals": risk_signals
+    }
+    
+    ndvi_context = satellite
+
 
 
     try:
@@ -101,35 +122,35 @@ def predict_crop_view(request):
         humidity = float(data["humidity"])
         ph = float(data["ph"])
         rainfall = float(data["rainfall"])
-        
+
         # Check for NaN or None
         values = [nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall]
         if any((v is None or math.isnan(v)) for v in values):
             raise ValueError("All inputs must be valid numbers (not blank or NaN)")
-        
+
         # Check for finite values
         if any(math.isinf(v) for v in values):
             raise ValueError("All inputs must be finite numbers")
-            
+
         # Validation bounds
         if not (-50 <= temperature <= 60):
             return JsonResponse({
                 "success": False,
                 "error": f"Validation error: temperature {temperature} is outside reasonable bounds (-50 to 60 °C)."
             }, status=400)
-            
+
         if not (0 <= humidity <= 100):
             return JsonResponse({
                 "success": False,
                 "error": f"Validation error: humidity {humidity} is outside reasonable bounds (0 to 100 %)."
             }, status=400)
-            
+
         if not (0 <= rainfall <= 10000):
             return JsonResponse({
                 "success": False,
                 "error": f"Validation error: rainfall {rainfall} is outside reasonable bounds (0 to 10000 mm)."
             }, status=400)
-            
+
     except Exception as e:
         logger.error(f"Input conversion error: {e}")
         return JsonResponse({
@@ -137,7 +158,7 @@ def predict_crop_view(request):
             "error": "Invalid input data"
         }, status=400)
 
-    print(f"Parsed values: N={nitrogen}, P={phosphorus}, K={potassium}, Temp={temperature}, Humidity={humidity}, pH={ph}, Rainfall={rainfall}")
+    logger.debug("Parsed values for prediction.")
 
     # The Random Forest must receive a pandas DataFrame with these exact column names
     model_input_df = pd.DataFrame([[
@@ -149,11 +170,11 @@ def predict_crop_view(request):
         ph,
         rainfall
     ]], columns=["N", "P", "K", "temperature", "humidity", "ph", "rainfall"])
-    
-    print("Model input DataFrame:\n", model_input_df)
+
+    logger.debug("Model input DataFrame created.")
 
     if crop_recommendation_model is None:
-        print("Prediction error: Crop recommendation model not loaded")
+        logger.error("Prediction error: Crop recommendation model not loaded")
         return JsonResponse({
             "success": False,
             "error": "Crop recommendation model not loaded"
@@ -164,21 +185,13 @@ def predict_crop_view(request):
     class_labels = crop_recommendation_model.classes_
     # Pair labels with probabilities
     label_proba = list(zip(class_labels, proba))
-    # Debug: print all crop probabilities (unsorted)
-    print("All crop probabilities:")
-    for label, prob in label_proba:
-        print(f"  {label}: {prob:.4f}")
-
     # Sort by probability descending
     label_proba_sorted = sorted(label_proba, key=lambda x: x[1], reverse=True)
-    print("Sorted crop probabilities:")
-    for label, prob in label_proba_sorted:
-        print(f"  {label}: {prob:.4f}")
 
     # --- Hybrid Recommendation Logic ---
     # 1. Model prediction for primary crop
     primary_crop = crop_recommendation_model.predict(model_input_df)[0]
-    print(f"Model predicted crop: {primary_crop}")
+    logger.info("Model predicted crop: %s", primary_crop)
 
     # Related crops mapping
     relatedCrops = {
@@ -206,17 +219,6 @@ def predict_crop_view(request):
         "coffee": ["coconut", "banana"]
     }
 
-    # 2. Fetch related crops from mapping
-    related = relatedCrops.get(str(primary_crop).lower(), [])
-    # 3. Compose result: primary + up to 2 related crops, no duplicates
-    final_crops = [primary_crop]
-    for crop in related:
-        if crop != primary_crop and crop not in final_crops:
-            final_crops.append(crop)
-        if len(final_crops) == 3:
-            break
-    print("Selected crops (final recommendations):", final_crops)
-
     # --- Confidence / Familiarity Check ---
     prediction_status = "low_confidence"
     warning = None
@@ -233,7 +235,7 @@ def predict_crop_view(request):
             distances, _ = nn_model.kneighbors(scaled_input)
             nearest_dist = float(distances[0][0])
             mean_5_dist = float(np.mean(distances[0]))
-            
+
             # Determine status based on mean 5-nearest distance
             if mean_5_dist <= FAMILIARITY_HIGH:
                 data_familiarity = "high"
@@ -255,20 +257,55 @@ def predict_crop_view(request):
                 prediction_status = "insufficient_data"
                 warning = "The supplied conditions are outside the range well represented by our training data. The recommendation should be treated as an estimate, not a reliable crop recommendation."
         except Exception as e:
-            print("Error calculating familiarity:", e)
+            logger.warning("Error calculating familiarity: %s", e)
 
+    # Calculate Yield Prediction
+    estimated_yield = None
+    if yield_prediction_model is not None:
+        try:
+            yield_pred = yield_prediction_model.predict(model_input_df)[0]
+            estimated_yield = float(yield_pred)
+        except Exception as e:
+            logger.error("Yield prediction error: %s", e)
+
+    # --- Regenerative Scoring ---
+    from .regenerative import apply_regenerative_ranking
+    
+    soil_context = {
+        "N": nitrogen,
+        "P": phosphorus,
+        "K": potassium,
+        "pH": ph,
+        "rainfall": rainfall
+    }
+    
+    regenerative_results = apply_regenerative_ranking(
+        label_proba_sorted,
+        soil_context,
+        weather_context,
+        ndvi_context
+    )
+    
+    # Update final crops based on regenerative ranking instead of generic mapping
+    # We will pick the top 3 from the regenerative ranking
+    top3_regen = regenerative_results[:3]
+    final_crops = [r["crop"] for r in top3_regen]
+    primary_crop = final_crops[0]
+    
     response_data = {
         "success": True,
         "recommendations": final_crops,
         "prediction": primary_crop,
         "top3": [{"crop": c, "probability": p} for c, p in label_proba_sorted[:3]],
+        "regenerative_ranking": top3_regen,
+        "estimated_yield": estimated_yield,
         "confidence": float(top1_prob),
         "prediction_status": prediction_status,
         "nearest_sample_distance": nearest_dist,
         "mean_5_nearest_distance": mean_5_dist,
         "data_familiarity": data_familiarity
     }
-    
+
     if warning:
         response_data["warning"] = warning
 
@@ -326,16 +363,16 @@ def build_weather_risk_signals(forecast):
         signals.append("Rain is forecast on multiple upcoming days.")
     elif rainy_days <= 1:
         signals.append("Little or no precipitation is forecast across most of the outlook.")
-        
+
     temps = [day.get("temperature_max") for day in forecast if day.get("temperature_max") is not None]
     if temps:
         if max(temps) - min(temps) >= 8:
             signals.append("The warmest forecast day is considerably warmer than the coolest.")
-            
+
     high_rain_prob = sum(1 for day in forecast if day.get("precipitation_probability", 0) >= 60)
     if high_rain_prob >= 2:
         signals.append("High rain probability occurs on upcoming days.")
-        
+
     consecutive_dry = 0
     max_dry = 0
     for day in forecast:
@@ -346,7 +383,7 @@ def build_weather_risk_signals(forecast):
             consecutive_dry = 0
     if max_dry >= 4:
         signals.append("Several consecutive days have no forecast precipitation.")
-        
+
     return list(set(signals))
 import urllib.request
 
@@ -354,33 +391,33 @@ import urllib.request
 def get_weather_view(request):
     lat = request.GET.get('lat')
     lon = request.GET.get('lon')
-    
+
     if not lat or not lon:
         return JsonResponse({"success": False, "error": "Missing lat or lon parameters"}, status=400)
-        
+
     try:
         lat_f = float(lat)
         lon_f = float(lon)
         cache_key = f"weather_{round(lat_f, 3)}_{round(lon_f, 3)}"
         cached_data = cache.get(cache_key)
-        
+
         if cached_data:
             return JsonResponse(cached_data)
-            
+
         url = f"https://api.open-meteo.com/v1/forecast?latitude={lat_f}&longitude={lon_f}&current=temperature_2m,relative_humidity_2m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weather_code&timezone=auto&forecast_days=7"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            
+
         if "error" in data:
             return JsonResponse({"success": False, "error": data.get("reason", "Unknown Open-Meteo error")}, status=400)
-            
+
         weather_obj = {
             "temperature": data["current"]["temperature_2m"],
             "humidity": data["current"]["relative_humidity_2m"],
             "current_precipitation": data["current"]["precipitation"]
         }
-        
+
         forecast = []
         if "daily" in data:
             daily = data["daily"]
@@ -394,14 +431,14 @@ def get_weather_view(request):
                     "precipitation_probability": daily.get("precipitation_probability_max", [])[i] if i < len(daily.get("precipitation_probability_max", [])) else None,
                     "weather_code": daily.get("weather_code", [])[i] if i < len(daily.get("weather_code", [])) else None
                 })
-                
+
         forecast_summary = {}
         if forecast:
             temps_max = [day["temperature_max"] for day in forecast if day.get("temperature_max") is not None]
             temps_min = [day["temperature_min"] for day in forecast if day.get("temperature_min") is not None]
             precip = [day["precipitation_sum"] for day in forecast if day.get("precipitation_sum") is not None]
             precip_prob = [day["precipitation_probability"] for day in forecast if day.get("precipitation_probability") is not None]
-            
+
             forecast_summary = {
                 "days_available": len(forecast),
                 "highest_temperature": max(temps_max) if temps_max else None,
@@ -410,9 +447,9 @@ def get_weather_view(request):
                 "rainiest_day": max(forecast, key=lambda d: d.get("precipitation_sum") or 0).get("date") if precip else None,
                 "max_precipitation_probability": max(precip_prob) if precip_prob else 0
             }
-            
+
         risk_signals = build_weather_risk_signals(forecast)
-        
+
         response_data = {
             "success": True,
             "weather": weather_obj,
@@ -420,12 +457,12 @@ def get_weather_view(request):
             "forecast_summary": forecast_summary,
             "risk_signals": risk_signals
         }
-        
+
         # Cache for 3 hours
         cache.set(cache_key, response_data, 60 * 60 * 3)
-        
+
         return JsonResponse(response_data)
-        
+
     except Exception as e:
         logger.error(f"Weather fetch error: {e}")
         return JsonResponse({"success": False, "error": "Weather data is currently unavailable. Please try again later."}, status=500)
@@ -438,25 +475,6 @@ from datetime import datetime, timezone
 # ==============================
 from .sentinel_hub import get_sentinel_access_token
 
-@require_GET
-def satellite_test_view(request):
-    try:
-        token = get_sentinel_access_token()
-        if token:
-            return JsonResponse({
-                "success": True,
-                "provider": "Sentinel Hub",
-                "authenticated": True,
-                "message": "Sentinel Hub authentication successful"
-            })
-    except Exception as e:
-        logger.error(f"Satellite Auth Error: {str(e)}")
-        return JsonResponse({
-            "success": False,
-            "provider": "Sentinel Hub",
-            "authenticated": False,
-            "error": "Sentinel Hub authentication failed"
-        }, status=500)
 
 # ==============================
 # Satellite NDVI API
@@ -466,10 +484,10 @@ def satellite_test_view(request):
 def satellite_ndvi_view(request):
     lat_str = request.GET.get('lat')
     lon_str = request.GET.get('lon')
-    
+
     if not lat_str or not lon_str:
         return JsonResponse({"success": False, "error": "Missing lat or lon parameters"}, status=400)
-        
+
     try:
         lat = float(lat_str)
         lon = float(lon_str)
@@ -481,7 +499,7 @@ def satellite_ndvi_view(request):
     # Cache key based on rounded coordinates (approx 1.1km grid)
     cache_key = f"ndvi_{round(lat, 3)}_{round(lon, 3)}"
     cached_data = cache.get(cache_key)
-    
+
     if cached_data:
         # Avoid caching fake results/errors - only successful ones are cached
         return JsonResponse(cached_data)
@@ -494,23 +512,23 @@ def satellite_ndvi_view(request):
                 "status": "NO_RECENT_DATA",
                 "message": "Satellite data unavailable for this period, possibly due to cloud cover."
             })
-            
+
         date_str = obs["datetime"]
         cloud_cover = obs["cloud_cover"]
-        
+
         ndvi_val = get_ndvi_statistics(lat, lon, date_str)
-        
+
         if ndvi_val is None or not (-1 <= ndvi_val <= 1):
             return JsonResponse({
                 "success": False,
                 "status": "INVALID_DATA",
                 "message": "Could not calculate a valid NDVI for this area."
             })
-            
+
         # Calculate days since observation
         obs_dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         days_since = (datetime.now(timezone.utc) - obs_dt).days
-        
+
         response_data = {
             "success": True,
             "indicator": "NDVI",
@@ -520,12 +538,12 @@ def satellite_ndvi_view(request):
             "source": "Sentinel-2 L2A",
             "days_since_observation": days_since
         }
-        
+
         # Cache successful response for 6 hours
         cache.set(cache_key, response_data, 60 * 60 * 6)
-        
+
         return JsonResponse(response_data)
-        
+
     except Exception as e:
         logger.error(f"Satellite API Error: {str(e)}")
         return JsonResponse({
@@ -583,28 +601,28 @@ def agri_advisory_view(request):
         # Basic type checks to prevent malformed data going to Gemini
         if not isinstance(soil.get("N"), (int, float)):
             return JsonResponse({"success": False, "error": "Malformed numeric data"}, status=400)
-            
+
         weather_temperature = weather.get("temperature")
         weather_precipitation = weather.get("precipitation")
-        
+
         if weather_temperature is not None and not isinstance(weather_temperature, (int, float)):
             return JsonResponse({"success": False, "error": "Malformed numeric data"}, status=400)
-            
+
         if weather_precipitation is not None and not isinstance(weather_precipitation, (int, float)):
             return JsonResponse({"success": False, "error": "Malformed numeric data"}, status=400)
-            
+
     except Exception as e:
         return JsonResponse({"success": False, "error": f"Validation error: {e}"}, status=400)
 
     # 3. Build Prompt Data
-    
+
     if not weather:
         weather_status = "UNAVAILABLE"
         weather_str = "Status: UNAVAILABLE"
     else:
         weather_status = "AVAILABLE"
         weather_str = f"Temperature: {weather.get('temperature')} C\nPrecipitation: {weather.get('precipitation')} mm"
-        
+
     forecast_str = ""
     if weather_forecast.get("status") == "AVAILABLE":
         summary = weather_forecast.get("summary", {})
@@ -654,8 +672,10 @@ CROP PREDICTION (Machine Learning Output):
 Primary Recommendation: {prediction.get("primary_crop")}
 Top 3 Recommendations: {json.dumps(prediction.get("top3"))}
 Familiarity/Confidence Status: {prediction.get("prediction_status")}
+Estimated Yield Index: {prediction.get("estimated_yield", "Unavailable")}
+Regenerative Heuristic Signals: {json.dumps(prediction.get("regenerative_signals", []))}
 """
-    
+
     if prediction.get("prediction_status") in ["low_confidence", "insufficient_data"]:
         prompt_text += "\nCRITICAL: The model has insufficient familiarity with these conditions. You MUST add a strong disclaimer in the 'summary' and 'cautions' sections advising the farmer to consult local experts, and state that this is merely a broad estimate."
 
@@ -664,7 +684,7 @@ Familiarity/Confidence Status: {prediction.get("prediction_status")}
 
     if weather_status != "AVAILABLE":
         prompt_text += "\nCRITICAL: Current weather data is unavailable. Do not invent temperature, humidity, precipitation, rainfall, or weather conditions. Avoid weather-specific advice that depends on missing values."
-        
+
     if weather_forecast.get("status") != "AVAILABLE":
         prompt_text += "\nCRITICAL: The upcoming weather forecast is unavailable. Do not invent future temperature, rainfall, precipitation probability, storms, dry spells, or future weather conditions."
     else:
@@ -711,7 +731,7 @@ Return ONLY the required structured JSON response with all string values in {lan
 
     try:
         orchestrator = AIOrchestrator()
-        
+
         response_schema = {
             "type": "OBJECT",
             "properties": {
@@ -742,10 +762,10 @@ Return ONLY the required structured JSON response with all string values in {lan
             response_schema=response_schema,
             temperature=0.2
         )
-        
+
         # We can log provider usage here if needed
         logger.info(f"Agri Advisory generated by {metadata.get('provider')} ({metadata.get('model_version')})")
-        
+
         return JsonResponse({
             "success": True,
             "advisory": advisory_data
@@ -785,21 +805,24 @@ disease_confidence_threshold = 0.60
 
 try:
     if disease_onnx_path.exists():
-        disease_session = ort.InferenceSession(str(disease_onnx_path), providers=['CPUExecutionProvider'])
-        
+        sess_options = ort.SessionOptions()
+        sess_options.intra_op_num_threads = 1
+        sess_options.inter_op_num_threads = 1
+        disease_session = ort.InferenceSession(str(disease_onnx_path), sess_options=sess_options, providers=['CPUExecutionProvider'])
+
     if class_names_path.exists():
         with open(class_names_path, "r") as f:
             disease_class_names = json.load(f)
-            
+
     if preprocessing_path.exists():
         with open(preprocessing_path, "r") as f:
             disease_preprocessing = json.load(f)
-            
+
     if metadata_path.exists():
         with open(metadata_path, "r") as f:
             md = json.load(f)
             disease_confidence_threshold = md.get("confidence_threshold", 0.60)
-            
+
     logger.info("Disease model artifacts loaded successfully.")
 except Exception as e:
     logger.error(f"Failed to load disease model artifacts: {e}")
@@ -832,7 +855,7 @@ def disease_detection_view(request):
                 "status": "ANALYSIS_UNAVAILABLE",
                 "message": "Disease detection model is currently unavailable."
             })
-            
+
         # 2. Crop Validation
         crop = request.POST.get("crop", "").lower().strip()
         if crop not in DISEASE_CROP_MAPPING:
@@ -841,7 +864,7 @@ def disease_detection_view(request):
                 "status": "UNSUPPORTED_CROP",
                 "message": "Disease detection is currently unavailable for this crop."
             })
-            
+
         # 3. Image Validation
         if "image" not in request.FILES:
             return JsonResponse({
@@ -849,7 +872,7 @@ def disease_detection_view(request):
                 "status": "INVALID_IMAGE",
                 "message": "No image provided."
             })
-            
+
         image_file = request.FILES["image"]
         if image_file.size > 5 * 1024 * 1024:
             return JsonResponse({
@@ -857,12 +880,12 @@ def disease_detection_view(request):
                 "status": "INVALID_IMAGE",
                 "message": "Image size exceeds 5MB."
             })
-            
+
         try:
             image_data = image_file.read()
             img = Image.open(io.BytesIO(image_data))
             img.verify() # Verify it's an actual image
-            
+
             # Re-open for processing because verify() breaks the file pointer
             img = Image.open(io.BytesIO(image_data)).convert('RGB')
         except Exception:
@@ -871,37 +894,37 @@ def disease_detection_view(request):
                 "status": "INVALID_IMAGE",
                 "message": "Invalid or corrupted image format."
             })
-            
+
         # 4. Preprocessing
         # Uses ImageNet stats by default as per preprocessing.json
         img = img.resize((224, 224), Image.BILINEAR)
         img_np = np.array(img).astype(np.float32) / 255.0
-        
+
         mean = np.array([0.485, 0.456, 0.406])
         std = np.array([0.229, 0.224, 0.225])
         img_np = (img_np - mean) / std
-        
+
         # HWC to CHW
         img_np = np.transpose(img_np, (2, 0, 1))
         # Add batch dimension
         img_np = np.expand_dims(img_np, axis=0).astype(np.float32)
-        
+
         # 5. Inference
         input_name = disease_session.get_inputs()[0].name
         logits = disease_session.run(None, {input_name: img_np})[0]
-        
+
         # Softmax
         exp_logits = np.exp(logits - np.max(logits, axis=1, keepdims=True))
         probs = exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
         probs = probs[0]
-        
+
         pred_idx = int(np.argmax(probs))
         pred_class = disease_class_names[str(pred_idx)]
         confidence = float(probs[pred_idx])
-        
+
         # 6. Post-Processing & Safety Validation
         allowed_classes = DISEASE_CROP_MAPPING[crop]
-        
+
         if pred_class not in allowed_classes or confidence < disease_confidence_threshold:
             return JsonResponse({
                 "success": True,
@@ -910,12 +933,12 @@ def disease_detection_view(request):
                 "diagnosis": None,
                 "confidence": round(confidence, 4)
             })
-            
+
         if pred_class.endswith("_healthy"):
             status = "HEALTHY"
         else:
             status = "DISEASE_DETECTED"
-            
+
         return JsonResponse({
             "success": True,
             "status": status,
@@ -926,7 +949,7 @@ def disease_detection_view(request):
                 "confidence": round(confidence, 4)
             }
         })
-        
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -954,10 +977,22 @@ def disease_advisory_view(request):
             "message": "Too many requests. Please try again later."
         }, status=429)
 
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except Exception as e:
-        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+    is_multipart = request.content_type.startswith('multipart/form-data')
+    image_file = None
+    if is_multipart:
+        data_str = request.POST.get('data')
+        if not data_str:
+            return JsonResponse({"success": False, "error": "Missing JSON data in multipart request"}, status=400)
+        try:
+            data = json.loads(data_str)
+        except Exception:
+            return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
+        image_file = request.FILES.get('image')
+    else:
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except Exception as e:
+            return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
 
     # Removing explicit key checks here so orchestrator manages both.
 
@@ -977,9 +1012,12 @@ def disease_advisory_view(request):
 
         diagnosis = data.get("diagnosis", {})
         status = diagnosis.get("status")
-        
-        # Only allow Gemini to process valid HEALTHY or DISEASE_DETECTED results
-        if status not in ["HEALTHY", "DISEASE_DETECTED"]:
+
+        is_vision_request = False
+        if image_file is not None and status == "LOW_CONFIDENCE":
+            is_vision_request = True
+
+        if status not in ["HEALTHY", "DISEASE_DETECTED"] and not is_vision_request:
             return JsonResponse({
                 "success": True,
                 "status": status if status else "LOW_CONFIDENCE",
@@ -987,33 +1025,36 @@ def disease_advisory_view(request):
                 "message": "A reliable disease advisory cannot be generated because the screening result is uncertain or invalid."
             })
 
+        if image_file is not None and not is_vision_request:
+            return JsonResponse({"success": False, "error": "Image provided but screening status does not warrant vision fallback."}, status=400)
+
         location = data.get("location", {})
         weather = data.get("weather_current", {})
         weather_forecast = data.get("weather_forecast", {})
         satellite = data.get("satellite", {})
-        
+
         # Basic type checks for weather to prevent malformed data
         weather_temperature = weather.get("temperature")
         weather_precipitation = weather.get("precipitation")
-        
+
         if weather_temperature is not None and not isinstance(weather_temperature, (int, float)):
             return JsonResponse({"success": False, "error": "Malformed numeric data"}, status=400)
-            
+
         if weather_precipitation is not None and not isinstance(weather_precipitation, (int, float)):
             return JsonResponse({"success": False, "error": "Malformed numeric data"}, status=400)
-            
+
     except Exception as e:
         return JsonResponse({"success": False, "error": f"Validation error: {e}"}, status=400)
 
     # 3. Build Prompt Data
-    
+
     if not weather:
         weather_status = "UNAVAILABLE"
         weather_str = "Status: UNAVAILABLE"
     else:
         weather_status = "AVAILABLE"
         weather_str = f"Temperature: {weather.get('temperature')} C\nPrecipitation: {weather.get('precipitation')} mm"
-        
+
     forecast_str = ""
     if weather_forecast.get("status") == "AVAILABLE":
         summary = weather_forecast.get("summary", {})
@@ -1067,7 +1108,7 @@ Status: {satellite.get("status", "UNAVAILABLE")}
 
     if weather_status != "AVAILABLE":
         prompt_text += "\nCRITICAL: Current weather data is unavailable. Do not invent temperature, humidity, precipitation, rainfall, or weather conditions. Avoid weather-specific advice that depends on missing values."
-        
+
     if weather_forecast.get("status") != "AVAILABLE":
         prompt_text += "\nCRITICAL: The upcoming weather forecast is unavailable. Do not invent future temperature, rainfall, precipitation probability, storms, dry spells, or future weather conditions."
     else:
@@ -1122,65 +1163,150 @@ Return ONLY the strictly structured JSON response with all string values in {lan
 
     try:
         orchestrator = AIOrchestrator()
-        
-        response_schema = {
-            "type": "OBJECT",
-            "properties": {
-                "summary": {"type": "STRING", "description": "Short explanation of the screening result."},
-                "what_it_means": {"type": "STRING", "description": "Simple explanation of the detected disease, or crop health monitoring for healthy results."},
-                "symptoms": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Typical symptoms to look out for."
-                },
-                "immediate_actions": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Immediate practical actions."
-                },
-                "sustainable_practices": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Long-term sustainable management practices."
-                },
-                "prevention": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Preventive measures for the future."
-                },
-                "weather_considerations": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Advice based on the provided weather/forecast data."
-                },
-                "when_to_seek_help": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Situations requiring expert assistance."
-                },
-                "cautions": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"},
-                    "description": "Important safety cautions, especially regarding chemical treatments."
-                }
-            },
-            "required": ["summary", "what_it_means", "symptoms", "immediate_actions", "sustainable_practices", "prevention", "weather_considerations", "when_to_seek_help", "cautions"]
-        }
 
-        advisory_data, metadata = orchestrator.generate_advisory_with_fallback(
-            prompt_text=prompt_text,
-            system_instruction=system_instruction,
-            response_schema=response_schema,
-            temperature=0.2
-        )
-        
-        logger.info(f"Disease Advisory generated by {metadata.get('provider')} ({metadata.get('model_version')})")
-        
-        return JsonResponse({
-            "success": True,
-            "status": "ADVISORY_GENERATED",
-            "advisory": advisory_data
-        })
+        if is_vision_request:
+            from .image_utils import preprocess_multimodal_image, ImageValidationError
+            try:
+                raw_bytes = image_file.read()
+                sanitized_bytes, mime_type, metadata = preprocess_multimodal_image(raw_bytes, image_file.content_type)
+            except ImageValidationError as e:
+                return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+            allowed_classes = DISEASE_CROP_MAPPING.get(crop, [])
+
+            vision_prompt_text = f"""
+OUTPUT LANGUAGE: {language_full} — ALL advisory string values must be in {language_full}.
+Language code: {language}
+Crop: {crop}
+Location: {location.get("region", "Unknown")}
+
+DISEASE SCREENING RESULT (Machine Learning Output Context):
+Status: {status}
+Confidence: {diagnosis.get("confidence", 0) * 100:.1f}%
+
+The local screening model produced an uncertain or cross-crop result.
+Treat that result as context only, not as ground truth.
+Independently inspect the supplied leaf image.
+Allowed diseases for {crop}: {', '.join(allowed_classes)}.
+If the image appears inconsistent with the selected crop or no disease matches, you must return 'Unidentified' rather than forcing a fit.
+The assessment is NOT a confirmed diagnosis. Recommend expert confirmation when appropriate.
+
+CURRENT WEATHER:
+{weather_str}
+
+SATELLITE DATA:
+Status: {satellite.get("status", "UNAVAILABLE")}
+"""
+            if satellite.get("status") == "AVAILABLE":
+                vision_prompt_text += f"NDVI: {satellite.get('ndvi')}\nDays since observation: {satellite.get('days_since')}\nCloud Cover: {satellite.get('cloud_cover')}%\n"
+
+            vision_prompt_text += f"""
+=== FINAL MANDATORY OUTPUT LANGUAGE REMINDER ===
+You MUST write ALL advisory text values in {language_full}.
+Do NOT write any advisory sentence or bullet point in English if the requested language is not English.
+The JSON keys remain in English. Only the string VALUES must be in {language_full}.
+=== END ===
+"""
+
+            vision_system_instruction = f"""=== MANDATORY OUTPUT LANGUAGE: {language_full} ===
+EVERY human-readable string value in the JSON response MUST be written in {language_full}.
+This is a non-negotiable hard requirement.
+Only the string VALUES must be in {language_full}.
+=== END OF LANGUAGE REQUIREMENT ===
+
+You are an agricultural advisory assistant helping farmers interpret an AI-assisted crop disease screening result for KrushiSense.
+You are performing an AI-Assisted Visual Assessment on the provided image because the local screening model was uncertain.
+Assess the visual evidence carefully. Do NOT invent missing data.
+"""
+
+            vision_response_schema = {
+                "type": "OBJECT",
+                "properties": {
+                    "assessment_type": {"type": "STRING", "enum": ["AI-Assisted Visual Assessment"]},
+                    "possible_condition": {"type": "STRING", "description": "The most likely condition, or 'Unidentified'"},
+                    "confidence_level": {"type": "STRING", "enum": ["Low", "Moderate", "High"]},
+                    "visual_evidence": {"type": "STRING", "description": "Description of visible lesions, spots, discoloration, patterns, etc."},
+                    "uncertainty_disclaimer": {"type": "STRING", "description": "Explicitly communicate that this is NOT a confirmed diagnosis"},
+                    "recommended_next_step": {"type": "STRING", "description": "Actionable but conservative advice"}
+                },
+                "required": ["assessment_type", "possible_condition", "confidence_level", "visual_evidence", "uncertainty_disclaimer", "recommended_next_step"]
+            }
+
+            advisory_data, metadata_res = orchestrator.generate_vision_advisory_with_fallback(
+                prompt_text=vision_prompt_text,
+                image_bytes=sanitized_bytes,
+                mime_type=mime_type,
+                system_instruction=vision_system_instruction,
+                response_schema=vision_response_schema,
+                temperature=0.2
+            )
+
+            logger.info(f"Vision Advisory generated by {metadata_res.get('provider')} ({metadata_res.get('model_version')})")
+
+            return JsonResponse({
+                "success": True,
+                "status": "ADVISORY_GENERATED",
+                "advisory": advisory_data
+            })
+        else:
+            response_schema = {
+                "type": "OBJECT",
+                "properties": {
+                    "summary": {"type": "STRING", "description": "Short explanation of the screening result."},
+                    "what_it_means": {"type": "STRING", "description": "Simple explanation of the detected disease, or crop health monitoring for healthy results."},
+                    "symptoms": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Typical symptoms to look out for."
+                    },
+                    "immediate_actions": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Immediate practical actions."
+                    },
+                    "sustainable_practices": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Long-term sustainable management practices."
+                    },
+                    "prevention": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Preventive measures for the future."
+                    },
+                    "weather_considerations": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Advice based on the provided weather/forecast data."
+                    },
+                    "when_to_seek_help": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Situations requiring expert assistance."
+                    },
+                    "cautions": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                        "description": "Important safety cautions, especially regarding chemical treatments."
+                    }
+                },
+                "required": ["summary", "what_it_means", "symptoms", "immediate_actions", "sustainable_practices", "prevention", "weather_considerations", "when_to_seek_help", "cautions"]
+            }
+
+            advisory_data, metadata = orchestrator.generate_advisory_with_fallback(
+                prompt_text=prompt_text,
+                system_instruction=system_instruction,
+                response_schema=response_schema,
+                temperature=0.2
+            )
+
+            logger.info(f"Disease Advisory generated by {metadata.get('provider')} ({metadata.get('model_version')})")
+
+            return JsonResponse({
+                "success": True,
+                "status": "ADVISORY_GENERATED",
+                "advisory": advisory_data
+            })
 
     except AIConfigurationError as e:
         logger.error(f"Disease Advisory Configuration Error: {str(e)}")
