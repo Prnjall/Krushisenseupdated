@@ -73,7 +73,7 @@ class TestAIOrchestrator(unittest.TestCase):
 
             self.assertEqual(advisory["summary"], "OpenAI summary")
             self.assertEqual(metadata["provider"], "OpenAI")
-            mock_gemini_generate.assert_called_once()
+            self.assertEqual(mock_gemini_generate.call_count, 2)
             mock_openai.assert_called_once()
 
     @patch("predictions.ai.gemini_provider.generate_content_with_retry")
@@ -119,7 +119,7 @@ class TestAIOrchestrator(unittest.TestCase):
 
             self.assertEqual(advisory["summary"], "OpenAI summary")
             self.assertEqual(metadata["provider"], "OpenAI")
-            mock_gemini_generate.assert_called_once()
+            self.assertEqual(mock_gemini_generate.call_count, 2)
             mock_openai.assert_called_once()
 
     @patch("predictions.ai.gemini_provider.generate_content_with_retry")
@@ -210,7 +210,7 @@ class TestAIOrchestrator(unittest.TestCase):
 
             self.assertEqual(advisory["summary"], "OpenAI vision summary")
             self.assertEqual(metadata["provider"], "OpenAI")
-            mock_gemini_generate.assert_called_once()
+            self.assertEqual(mock_gemini_generate.call_count, 2)
             mock_openai.assert_called_once()
 
     @patch("predictions.ai.gemini_provider.generate_content_with_retry")
@@ -235,7 +235,7 @@ class TestAIOrchestrator(unittest.TestCase):
 
             self.assertEqual(advisory["summary"], "OpenAI vision summary")
             self.assertEqual(metadata["provider"], "OpenAI")
-            mock_gemini_generate.assert_called_once()
+            self.assertEqual(mock_gemini_generate.call_count, 2)
             mock_openai.assert_called_once()
 
     @patch("predictions.ai.gemini_provider.generate_content_with_retry")
