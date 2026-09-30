@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 class AIOrchestrator:
     def __init__(self):
         self.gemini = GeminiProvider()
+        self.gemini_backup = GeminiProvider("GEMINI_BACKUP_API_KEY")
         self.openai = OpenAIProvider()
 
     def generate_advisory_with_fallback(
@@ -22,7 +23,8 @@ class AIOrchestrator:
     ) -> Tuple[Dict[str, Any], Dict[str, str]]:
         """
         Attempts to generate an advisory using the primary provider (Gemini).
-        If it encounters a TransientAIError, falls back to OpenAI.
+        If it encounters a TransientAIError, falls back to Gemini Backup.
+        If Backup fails, falls back to OpenAI.
 
         Returns a tuple of:
           - The generated parsed JSON dictionary matching the schema.
@@ -40,7 +42,7 @@ class AIOrchestrator:
             }
             return advisory, metadata
         except TransientAIError as e:
-            logger.warning(f"[AI Orchestrator] Primary provider transient failure: {e}. Attempting fallback.")
+            logger.warning(f"[AI Orchestrator] Primary provider transient failure: {e}. Attempting backup.")
         except PermanentAIError as e:
             logger.error(f"[AI Orchestrator] Primary provider permanent failure: {e}. Skipping fallback.")
             raise
@@ -48,7 +50,28 @@ class AIOrchestrator:
             logger.error(f"[AI Orchestrator] Primary provider misconfigured: {e}. Skipping fallback.")
             raise
 
-        # 2. Fallback Attempt (OpenAI)
+        # 2. Backup Attempt (Gemini Backup)
+        try:
+            advisory = self.gemini_backup.generate_advisory(
+                prompt_text, system_instruction, response_schema, temperature
+            )
+            metadata = {
+                "provider": self.gemini_backup.provider_name,
+                "model_version": self.gemini_backup.model_version
+            }
+            logger.info("[AI Orchestrator] Backup provider succeeded.")
+            return advisory, metadata
+        except AIConfigurationError as e:
+            logger.warning(f"[AI Orchestrator] Backup provider not configured ({e}). Attempting fallback.")
+        except TransientAIError as e:
+            logger.warning(f"[AI Orchestrator] Backup provider transient failure: {e}. Attempting fallback.")
+        except PermanentAIError as e:
+            logger.error(f"[AI Orchestrator] Backup provider permanent failure: {e}. Attempting fallback.")
+            # Note: A permanent error on the backup shouldn't necessarily skip OpenAI, since it might just be the backup key is invalid.
+            # But according to standard logic, if backup is permanently invalid, maybe fallback. The original logic for primary skipped fallback on permanent error.
+            # Let's just catch and proceed to fallback.
+
+        # 3. Fallback Attempt (OpenAI)
         try:
             advisory = self.openai.generate_advisory(
                 prompt_text, system_instruction, response_schema, temperature
@@ -81,7 +104,8 @@ class AIOrchestrator:
     ) -> Tuple[Dict[str, Any], Dict[str, str]]:
         """
         Attempts to generate a vision advisory using the primary provider (Gemini).
-        If it encounters a TransientAIError, falls back to OpenAI.
+        If it encounters a TransientAIError, falls back to Gemini Backup.
+        If Backup fails, falls back to OpenAI.
 
         Returns a tuple of:
           - The generated parsed JSON dictionary matching the schema.
@@ -98,7 +122,7 @@ class AIOrchestrator:
             }
             return advisory, metadata
         except TransientAIError as e:
-            logger.warning(f"[AI Orchestrator] Primary vision provider transient failure: {e}. Attempting fallback.")
+            logger.warning(f"[AI Orchestrator] Primary vision provider transient failure: {e}. Attempting backup.")
         except PermanentAIError as e:
             logger.error(f"[AI Orchestrator] Primary vision provider permanent failure: {e}. Skipping fallback.")
             raise
@@ -106,7 +130,25 @@ class AIOrchestrator:
             logger.error(f"[AI Orchestrator] Primary vision provider misconfigured: {e}. Skipping fallback.")
             raise
 
-        # 2. Fallback Attempt (OpenAI)
+        # 2. Backup Attempt (Gemini Backup)
+        try:
+            advisory = self.gemini_backup.generate_vision_content(
+                prompt_text, image_bytes, mime_type, system_instruction, response_schema, temperature
+            )
+            metadata = {
+                "provider": self.gemini_backup.provider_name,
+                "model_version": self.gemini_backup.model_version
+            }
+            logger.info("[AI Orchestrator] Backup vision provider succeeded.")
+            return advisory, metadata
+        except AIConfigurationError as e:
+            logger.warning(f"[AI Orchestrator] Backup vision provider not configured ({e}). Attempting fallback.")
+        except TransientAIError as e:
+            logger.warning(f"[AI Orchestrator] Backup vision provider transient failure: {e}. Attempting fallback.")
+        except PermanentAIError as e:
+            logger.error(f"[AI Orchestrator] Backup vision provider permanent failure: {e}. Attempting fallback.")
+
+        # 3. Fallback Attempt (OpenAI)
         try:
             advisory = self.openai.generate_vision_content(
                 prompt_text, image_bytes, mime_type, system_instruction, response_schema, temperature

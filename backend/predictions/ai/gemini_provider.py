@@ -14,16 +14,25 @@ from predictions.gemini_utils import generate_content_with_retry
 logger = logging.getLogger(__name__)
 
 class GeminiProvider(AIProvider):
-    def __init__(self):
+    def __init__(self, api_key_env_var: str = "GEMINI_API_KEY"):
         self._model = 'gemini-3.6-flash'
+        self._api_key_env_var = api_key_env_var
 
     @property
     def provider_name(self) -> str:
+        if self._api_key_env_var == "GEMINI_BACKUP_API_KEY":
+            return "Google Gemini (Backup)"
         return "Google Gemini"
 
     @property
     def model_version(self) -> str:
         return self._model
+
+    def _get_api_key(self) -> str:
+        api_key = os.getenv(self._api_key_env_var)
+        if not api_key:
+            raise AIConfigurationError(f"{self._api_key_env_var} is not configured.")
+        return api_key
 
     def generate_advisory(
         self,
@@ -32,9 +41,7 @@ class GeminiProvider(AIProvider):
         response_schema: Dict[str, Any],
         temperature: float = 0.2
     ) -> Dict[str, Any]:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise AIConfigurationError("GEMINI_API_KEY is not configured.")
+        api_key = self._get_api_key()
 
         client = genai.Client(api_key=api_key)
 
@@ -89,9 +96,7 @@ class GeminiProvider(AIProvider):
         response_schema: Dict[str, Any],
         temperature: float = 0.2
     ) -> Dict[str, Any]:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise AIConfigurationError("GEMINI_API_KEY is not configured.")
+        api_key = self._get_api_key()
 
         client = genai.Client(api_key=api_key)
 
