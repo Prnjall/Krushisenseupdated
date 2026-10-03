@@ -50,11 +50,11 @@ export const InteroperabilityPanel: React.FC<InteroperabilityPanelProps> = ({
     forecast: weatherForecast ? {
       horizon_days: weatherForecast?.length || 7,
       daily_forecasts: weatherForecast?.map((f: any) => ({
-        date: f.time,
-        temperature_max_c: f.temperature_2m_max,
-        temperature_min_c: f.temperature_2m_min,
+        date: f.date,
+        temperature_max_c: f.temperature_max,
+        temperature_min_c: f.temperature_min,
         precipitation_mm: f.precipitation_sum,
-        precipitation_probability_percent: f.precipitation_probability_max,
+        precipitation_probability_percent: f.precipitation_probability,
         weather_code: f.weather_code
       })) || [],
       risk_signals: []
@@ -247,7 +247,16 @@ export const InteroperabilityPanel: React.FC<InteroperabilityPanelProps> = ({
             </h5>
             <div className="space-y-4 text-sm font-body">
               <p><strong>{t("Summary")}:</strong> {advisory.summary}</p>
-              <p><strong>{t("Intervention")}:</strong> {advisory.intervention_advice}</p>
+              {advisory.next_steps && advisory.next_steps.length > 0 && (
+                <div>
+                  <p className="mb-2"><strong>{t("Next Steps")}:</strong></p>
+                  <ul className="list-disc pl-5 space-y-1 text-on-surface-variant">
+                    {advisory.next_steps.map((step: string, i: number) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -73,6 +73,9 @@ class TestAIOrchestrator(unittest.TestCase):
 
             self.assertEqual(advisory["summary"], "OpenAI summary")
             self.assertEqual(metadata["provider"], "OpenAI")
+            # generate_content_with_retry is patched globally, so it is called once by primary
+            # and once by backup (both are GeminiProvider instances sharing the same mock).
+            # Each provider makes exactly ONE underlying API call — no retry.
             self.assertEqual(mock_gemini_generate.call_count, 2)
             mock_openai.assert_called_once()
 
@@ -119,6 +122,7 @@ class TestAIOrchestrator(unittest.TestCase):
 
             self.assertEqual(advisory["summary"], "OpenAI summary")
             self.assertEqual(metadata["provider"], "OpenAI")
+            # Same global mock: called once by primary, once by backup. Total = 2.
             self.assertEqual(mock_gemini_generate.call_count, 2)
             mock_openai.assert_called_once()
 

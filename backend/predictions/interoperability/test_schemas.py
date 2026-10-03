@@ -99,3 +99,24 @@ def test_missing_optional_fields():
     assert obs.environment is None
     assert obs.satellite is None
     assert obs.disease_screening is None
+
+def test_forecast_missing_date_fails():
+    """Verify that a forecast payload without the required 'date' field fails (reproduction of bug)."""
+    with pytest.raises(ValidationError) as exc_info:
+        AgriculturalObservation(
+            context=ContextSchema(region="Test", country="India", language="en"),
+            forecast={"horizon_days": 1, "daily_forecasts": [{"temperature_max_c": 35.0}]}
+        )
+    assert "date" in str(exc_info.value)
+
+def test_forecast_valid_date_succeeds():
+    """Verify that a forecast payload with a valid 'date' field passes."""
+    obs = AgriculturalObservation(
+        context=ContextSchema(region="Test", country="India", language="en"),
+        forecast={
+            "horizon_days": 1, 
+            "daily_forecasts": [{"date": "2026-10-04", "temperature_max_c": 35.0, "precipitation_mm": 10.0}]
+        }
+    )
+    assert obs.forecast.daily_forecasts[0].date == "2026-10-04"
+
